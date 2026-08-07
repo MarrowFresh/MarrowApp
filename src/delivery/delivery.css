@@ -1,0 +1,101 @@
+/* Marrow Fresh — Delivery app (mobile) */
+.dframe {
+  max-width: 460px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bone);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 40px rgba(34, 25, 19, 0.12);
+}
+
+.dhead {
+  background: var(--espresso);
+  color: var(--cream);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.dbrand { font-family: "Playfair Display", serif; font-size: 20px; }
+.dbrand b { color: var(--terracotta); }
+.dbrand.big { font-size: 30px; margin-top: 6px; }
+.dsub { font-size: 12px; color: var(--gold); }
+.dlogout { background: transparent; border: 1px solid rgba(255,255,255,.3); color: var(--cream); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+
+.dbody { padding: 14px; flex: 1; }
+.dcount { font-size: 12px; color: var(--muted); margin-bottom: 12px; text-align: center; }
+.dsection { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 18px 4px 8px; }
+
+.dempty { text-align: center; color: var(--muted); padding: 50px 20px; line-height: 1.7; }
+.dempty span { font-size: 13px; }
+
+.dcard {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.dcard.done { opacity: .65; padding: 10px 14px; }
+.drow { display: flex; align-items: center; justify-content: space-between; font-size: 15px; }
+.dtick { color: var(--ok); font-weight: 700; }
+
+.dcust { font-family: "Playfair Display", serif; font-size: 20px; margin-top: 8px; }
+.daddr { font-size: 14px; color: var(--ink); margin-top: 2px; }
+
+.ditems { list-style: none; padding: 0; margin: 10px 0; }
+.ditems li { font-size: 14px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+.ditems li:last-child { border-bottom: none; }
+
+.dpay { margin: 6px 0; }
+.dcollect { background: var(--saffron); color: var(--espresso); font-weight: 700; padding: 6px 12px; border-radius: 10px; font-size: 14px; display: inline-block; }
+.dpaid { color: var(--ok); font-weight: 700; font-size: 14px; }
+
+.dnote { font-size: 11px; color: var(--muted); margin: 8px 0 12px; font-style: italic; }
+
+.dactions { display: flex; gap: 8px; flex-wrap: wrap; }
+.dbtn {
+  flex: 1; text-align: center; text-decoration: none;
+  border: none; border-radius: 12px; padding: 12px 10px;
+  font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.dbtn.map { background: var(--bone); border: 1px solid var(--line); color: var(--ink); flex: 0 0 84px; }
+.dbtn.go { background: var(--terracotta); color: #fff; }
+.dbtn.done { background: var(--ok); color: #fff; }
+.dbtn.full { width: 100%; margin-top: 16px; }
+.dbtn:disabled { opacity: .5; }
+
+.dpill { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.dpill.New { background: #efe3c9; color: #7a5b15; }
+.dpill.Cutting { background: #fde2b3; color: #8a5a08; }
+.dpill.Out { background: #cfe6f7; color: #1f5d86; }
+
+/* login */
+.dlogin { padding: 50px 26px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.dmark {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 3px solid var(--gold); color: var(--saffron);
+  display: grid; place-items: center;
+  font-family: "Playfair Display", serif; font-weight: 700; font-size: 34px;
+  background: var(--espresso); margin-bottom: 8px;
+}
+.dlabel { align-self: flex-start; font-size: 12px; color: var(--muted); margin: 18px 0 4px; }
+.dselect, .dinput { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px; font-size: 16px; background: #fff; }
+.dhint { font-size: 12px; color: var(--muted); margin-top: 14px; }
+
+.open-delivery {
+  margin-top: auto;
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(200,164,93,.5);
+  border-radius: 10px;
+  text-align: center;
+}
+.open-delivery:hover { background: rgba(255,255,255,.05); }

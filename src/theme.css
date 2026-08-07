@@ -1,0 +1,153 @@
+/* Marrow Fresh — brand theme
+   espresso #221913 · terracotta #C7472A · saffron #EE9F2E
+   gold #C8A45D · cream #FFFBF3 · bone #F4ECDC */
+:root {
+  --espresso: #221913;
+  --terracotta: #c7472a;
+  --saffron: #ee9f2e;
+  --gold: #c8a45d;
+  --cream: #fffbf3;
+  --bone: #f4ecdc;
+  --ink: #221913;
+  --muted: #7a6a5d;
+  --line: #e8ddc9;
+  --ok: #2e7d4f;
+  --bad: #b23b2e;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(34, 25, 19, 0.08);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: "Poppins", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bone);
+}
+h1, h2, h3, .serif { font-family: "Playfair Display", serif; }
+
+.app { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  background: var(--espresso);
+  color: var(--cream);
+  padding: 22px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+.brand .mark {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid var(--gold); color: var(--saffron);
+  display: grid; place-items: center;
+  font-family: "Playfair Display", serif; font-weight: 700; font-size: 22px;
+}
+.brand .name { font-family: "Playfair Display", serif; font-size: 19px; line-height: 1; }
+.brand .name b { color: var(--terracotta); }
+.brand .tag { font-size: 10px; color: var(--gold); letter-spacing: .5px; }
+
+.nav a {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--cream); text-decoration: none;
+  padding: 10px 12px; border-radius: 10px; font-size: 14px; opacity: .85;
+}
+.nav a:hover { background: rgba(255,255,255,.06); opacity: 1; }
+.nav a.active { background: var(--terracotta); opacity: 1; font-weight: 600; }
+.nav .soon { margin-left: auto; font-size: 9px; background: var(--gold); color: var(--espresso); padding: 1px 6px; border-radius: 8px; }
+
+/* Main */
+.main { padding: 26px 30px; overflow: auto; }
+.page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; }
+.page-head h1 { margin: 0; font-size: 28px; }
+.page-head .sub { color: var(--muted); font-size: 13px; }
+
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+.card {
+  background: var(--cream); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
+}
+.card .k { font-size: 12px; color: var(--muted); }
+.card .v { font-family: "Playfair Display", serif; font-size: 26px; margin-top: 4px; }
+.card .v.acc { color: var(--terracotta); }
+
+.panel {
+  background: var(--cream); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 18px;
+}
+.panel h2 { margin: 0 0 12px; font-size: 18px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+tr:last-child td { border-bottom: none; }
+
+.btn {
+  font-family: inherit; font-size: 14px; cursor: pointer;
+  border: none; border-radius: 10px; padding: 9px 16px; font-weight: 600;
+}
+.btn.primary { background: var(--terracotta); color: #fff; }
+.btn.accent { background: var(--saffron); color: var(--espresso); }
+.btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.btn.sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+input, select {
+  font-family: inherit; font-size: 14px; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink);
+}
+label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+
+.pill { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.pill.New { background: #efe3c9; color: #7a5b15; }
+.pill.Cutting { background: #fde2b3; color: #8a5a08; }
+.pill.Out { background: #cfe6f7; color: #1f5d86; }
+.pill.Delivered { background: #cdeccd; color: #226b2f; }
+.pill.Cancelled { background: #f2d2cd; color: #8a2a1e; }
+.pill.Paid { background: #cdeccd; color: #226b2f; }
+.pill.Unpaid { background: #f2d2cd; color: #8a2a1e; }
+
+.muted { color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.right { text-align: right; }
+.tot-line { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+.tot-line.grand { border-top: 2px solid var(--espresso); margin-top: 6px; padding-top: 10px; font-size: 18px; font-weight: 700; font-family: "Playfair Display", serif; }
+.free { color: var(--ok); font-weight: 600; }
+.nudge { background: #fff4e0; border: 1px dashed var(--saffron); color: #8a5a08; padding: 8px 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
+
+/* Order-detail two-column grid (stacks on mobile) */
+.detail-grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+
+/* Sidebar top row + hamburger (hamburger hidden on desktop) */
+.side-top { display: flex; align-items: center; justify-content: space-between; }
+.side-foot { margin-top: auto; padding: 12px 0; font-size: 12px; }
+.sidebar-toggle {
+  display: none; background: transparent; border: none; color: var(--cream);
+  font-size: 24px; line-height: 1; cursor: pointer; padding: 4px 8px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 820px) {
+  .app { grid-template-columns: 1fr; }
+
+  /* Sidebar becomes a sticky top bar; nav collapses behind the hamburger */
+  .sidebar { position: sticky; top: 0; z-index: 30; padding: 12px 16px; gap: 4px; }
+  .brand { margin-bottom: 0; }
+  .sidebar-toggle { display: block; }
+  .sidebar:not(.open) .nav,
+  .sidebar:not(.open) .open-delivery,
+  .sidebar:not(.open) .side-foot { display: none; }
+  .sidebar.open .nav { margin-top: 10px; }
+  .side-foot { margin-top: 10px; }
+
+  .main { padding: 16px; }
+  .page-head { flex-wrap: wrap; gap: 8px; }
+  .page-head h1 { font-size: 22px; }
+
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .detail-grid, .grid2 { grid-template-columns: 1fr; }
+
+  /* Dense tables scroll horizontally inside their panel instead of overflowing */
+  .panel { overflow-x: auto; }
+  .panel table { min-width: 600px; }
+}

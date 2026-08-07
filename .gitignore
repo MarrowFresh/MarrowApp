@@ -1,0 +1,15 @@
+# Node dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# Environment files (do NOT commit secrets)
+.env
+.env.*
+
+# OS/editor
+.DS_Store
+Thumbs.db
