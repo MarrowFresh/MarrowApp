@@ -111,6 +111,11 @@ export interface Order {
   id: string;
   order_no: number;
   customer_name: string;
+  customer_phone?: string | null;
+  /** First order from this customer? seq = position in their history, count = lifetime total. */
+  is_new_customer?: boolean;
+  customer_order_seq?: number;
+  customer_order_count?: number;
   address?: string;
   area?: string;
   status: OrderStatus;

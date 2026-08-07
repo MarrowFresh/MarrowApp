@@ -15,6 +15,9 @@ import CustomerApp from "./customer/CustomerApp";
 import { useAuth, auth } from "./lib/apiClient";
 import { store } from "./lib/data";
 
+// Shown in the footer. Bump on release.
+const APP_VERSION = "0.1.0";
+
 function Sidebar() {
   const [open, setOpen] = useState(false);
   const link = ({ isActive }: { isActive: boolean }) =>
@@ -72,6 +75,15 @@ function AdminLayout() {
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
+
+      {/* Standard application footer — identical on every screen, fixed to the
+          bottom of the viewport so it never moves with page data or scrolling. */}
+      <footer className="app-footer">
+        <span>© {new Date().getFullYear()} Marrow Fresh · Admin</span>
+        <span className="dot">·</span>
+        <span>Always fresh · Never frozen</span>
+        <span className="foot-right">v{APP_VERSION}</span>
+      </footer>
     </div>
   );
 }
@@ -91,14 +103,13 @@ export default function App() {
     return () => clearInterval(iv);
   }, [token]);
 
-  // Gate the whole app behind admin login.
-  if (!token) return <Login />;
-
   return (
     <Routes>
+      {/* The delivery app has its own phone + PIN login, and the storefront is
+          public — neither may sit behind the admin gate. */}
       <Route path="/delivery/*" element={<DeliveryApp />} />
       <Route path="/shop/*" element={<CustomerApp />} />
-      <Route path="/*" element={<AdminLayout />} />
+      <Route path="/*" element={token ? <AdminLayout /> : <Login />} />
     </Routes>
   );
 }

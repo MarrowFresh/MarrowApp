@@ -99,3 +99,37 @@
   text-align: center;
 }
 .open-delivery:hover { background: rgba(255,255,255,.05); }
+
+/* ── Added for the real (API-backed) delivery app ── */
+
+/* Extra action buttons alongside Maps */
+.dbtn.call { background: var(--bone); border: 1px solid var(--line); color: var(--ink); flex: 0 0 84px; }
+.dbtn.note { background: var(--bone); border: 1px solid var(--line); color: var(--ink); flex: 0 0 96px; }
+
+/* Login / fetch errors */
+.derror {
+  background: #fdecea; border: 1px solid #f5c6c0; color: #8a2a1e;
+  padding: 8px 10px; border-radius: 10px; font-size: 13px; margin: 10px 0;
+}
+
+/* A saved remark, shown on the card */
+.dremark {
+  background: #fff7e6; border: 1px dashed var(--saffron); color: #7a5b15;
+  padding: 8px 10px; border-radius: 10px; font-size: 13px; margin-top: 10px;
+  white-space: pre-wrap;
+}
+
+/* Remark editor */
+.dremark-edit { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.dtextarea {
+  width: 100%; font-family: inherit; font-size: 14px; padding: 10px;
+  border: 1px solid var(--line); border-radius: 10px; resize: vertical; background: #fff;
+}
+
+.dmuted { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+/* Manual refresh next to the counts */
+.drefresh {
+  background: transparent; border: none; cursor: pointer;
+  font-size: 15px; color: inherit; padding: 0 6px; margin-left: 6px;
+}

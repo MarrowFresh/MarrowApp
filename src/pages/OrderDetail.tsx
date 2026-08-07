@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { fetchOrderDetail, patchOrderStatus, type OrderDetail } from "../lib/apiClient";
+import {
+  fetchOrderDetail, patchOrderStatus, fetchStaff, patchOrderDelivery,
+  type OrderDetail, type StaffMember,
+} from "../lib/apiClient";
 import { store } from "../lib/data";
+import { CustomerBadge, CustomerPhone } from "../lib/customer";
 import type { OrderStatus } from "../lib/types";
 
 const STATUS_FLOW: OrderStatus[] = ["New", "Cutting/Packing", "Out for delivery", "Delivered"];
@@ -17,11 +21,50 @@ export default function OrderDetail() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Delivery staff for the assign dropdown (same source as the Orders screen).
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [picked, setPicked] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  useEffect(() => { fetchStaff("delivery").then(setStaff).catch(() => setStaff([])); }, []);
+
+  // Remarks — normally written by the rider in the delivery app; the admin can
+  // write on their behalf when the rider has no signal.
+  const [remarks, setRemarks] = useState("");
+  const [savingRemark, setSavingRemark] = useState(false);
+
+  const saveRemark = async () => {
+    if (!order) return;
+    setSavingRemark(true);
+    try {
+      await patchOrderDelivery(order.id, { remarks });
+      setOrder(await fetchOrderDetail(order.id));
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not save the remark");
+    } finally {
+      setSavingRemark(false);
+    }
+  };
+
+  const doAssign = async () => {
+    if (!order || !picked) return;
+    setAssigning(true);
+    try {
+      await store.assignOrder(order.id, picked);
+      setOrder(await fetchOrderDetail(order.id));
+    } catch {
+      window.alert("Could not save the assignment. Please try again.");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
     fetchOrderDetail(id)
-      .then((o) => alive && (setOrder(o), setError(null)))
+      .then((o) => alive && (
+        setOrder(o), setPicked(o.assigned_to || ""), setRemarks(o.remarks || ""), setError(null)
+      ))
       .catch((e) => alive && setError(e?.message || "Failed to load order"))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
@@ -52,10 +95,17 @@ export default function OrderDetail() {
       if (window.confirm(`Approve order #${order.order_no}?\n\nThis sends the customer a WhatsApp "Order Confirmed" message.`))
         doAdvance(to);
     } else if (to === "Out for delivery") {
-      const name = window.prompt(`Delivery agent name for order #${order.order_no}?`);
-      if (name === null) return; // cancelled
-      const phone = window.prompt("Delivery agent phone (optional):") || "";
-      doAdvance(to, { agentName: name.trim(), agentPhone: phone.trim() });
+      // Agent details come from the assigned staff member — same as the Orders screen.
+      if (!order.agent_name) {
+        window.alert("Assign a delivery boy first (below, or from the Orders screen).");
+        return;
+      }
+      if (window.confirm(
+        `Send order #${order.order_no} out for delivery with ${order.agent_name}?\n\n` +
+        `The customer gets a WhatsApp update with the delivery agent's name and number.`
+      )) {
+        doAdvance(to, { agentName: order.agent_name, agentPhone: order.agent_phone || "" });
+      }
     } else if (to === "Delivered") {
       if (window.confirm(`Mark order #${order.order_no} as delivered? This notifies the customer.`))
         doAdvance(to);
@@ -90,8 +140,13 @@ export default function OrderDetail() {
               {busy ? "Working…" : "✓ Approve & notify customer"}
             </button>
           ) : nextStatus ? (
-            <button className="btn" disabled={busy} onClick={() => onAdvance(nextStatus)}>
-              {busy ? "Working…" : `→ ${nextStatus}`}
+            <button
+              className="btn"
+              disabled={busy || (nextStatus === "Out for delivery" && !order.agent_name)}
+              title={nextStatus === "Out for delivery" && !order.agent_name ? "Assign a delivery boy first" : ""}
+              onClick={() => onAdvance(nextStatus)}
+            >
+              {busy ? "Working…" : nextStatus === "Out for delivery" ? "🛵 Out for delivery" : `→ ${nextStatus}`}
             </button>
           ) : order.status === "Delivered" ? (
             <span className="free">✓ Delivered</span>
@@ -103,7 +158,18 @@ export default function OrderDetail() {
         {/* Delivery / customer */}
         <div className="panel">
           <h3 style={{ marginTop: 0 }}>📍 Delivery</h3>
-          <p><b>{order.customer_name}</b></p>
+          <p style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <b>{order.customer_name}</b>
+            <CustomerBadge order={order} />
+          </p>
+          {order.customer_phone && (
+            <p style={{ marginTop: -4 }}><CustomerPhone phone={order.customer_phone} /></p>
+          )}
+          {!order.is_new_customer && (order.customer_order_count ?? 0) > 1 && (
+            <p className="muted" style={{ fontSize: 12, marginTop: -4 }}>
+              Returning customer · {order.customer_order_count} orders to date
+            </p>
+          )}
           <p className="muted" style={{ whiteSpace: "pre-wrap" }}>{order.delivery_address || "No address on file"}</p>
           <p className="muted">
             Nearest branch: <b>{order.branch || "—"}</b>
@@ -112,6 +178,59 @@ export default function OrderDetail() {
           <p className="muted">
             Instructions: {order.instructions ? <b>{order.instructions}</b> : <i>none recorded</i>}
           </p>
+
+          <div style={{ borderTop: "1px solid var(--line)", marginTop: 12, paddingTop: 10 }}>
+            <label htmlFor="d-agent">🛵 Delivery boy</label>
+            <div className="assign-cell">
+              <select
+                id="d-agent"
+                value={picked}
+                disabled={order.status === "Delivered" || staff.length === 0}
+                onChange={(e) => setPicked(e.target.value)}
+              >
+                <option value="">{staff.length === 0 ? "— no staff —" : "— select —"}</option>
+                {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <button
+                className="btn sm"
+                disabled={!picked || picked === order.assigned_to || assigning}
+                onClick={doAssign}
+              >
+                {assigning ? "…" : "Assign"}
+              </button>
+            </div>
+            {order.agent_name && (
+              <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>
+                ✓ {order.agent_name}{order.agent_phone ? ` · ${order.agent_phone}` : ""}
+              </div>
+            )}
+
+            {/* Delivery remark — the rider writes this from the delivery app; the
+                admin can write it for them when they have no signal. */}
+            <label htmlFor="d-remark" style={{ marginTop: 12 }}>📝 Delivery remark</label>
+            <textarea
+              id="d-remark"
+              rows={2}
+              value={remarks}
+              placeholder="e.g. customer not home, left with security"
+              onChange={(e) => setRemarks(e.target.value)}
+              style={{ width: "100%", resize: "vertical" }}
+            />
+            <div className="row" style={{ gap: 8, marginTop: 6 }}>
+              <button
+                className="btn sm"
+                disabled={savingRemark || remarks.trim() === (order.remarks || "").trim()}
+                onClick={saveRemark}
+              >
+                {savingRemark ? "Saving…" : "Save remark"}
+              </button>
+              {order.remarks_by && (
+                <span className="muted" style={{ fontSize: 11 }}>
+                  last by {order.remarks_by}{order.remarks_at ? ` · ${when(order.remarks_at)}` : ""}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Payment */}

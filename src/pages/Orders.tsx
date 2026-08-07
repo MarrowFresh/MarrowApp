@@ -1,37 +1,205 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDB } from "../useStore";
 import { store } from "../lib/data";
-import type { OrderStatus } from "../lib/types";
+import { CustomerBadge, CustomerPhone } from "../lib/customer";
+import { fetchStaff, createStaff, resetStaffPin, type StaffMember } from "../lib/apiClient";
+import type { Order, OrderStatus } from "../lib/types";
 
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
+
+// "07 Aug 2026" / "4:25 pm" — split across two lines so the column stays narrow.
+const placedOn = (iso?: string) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return {
+    date: d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+    time: d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true }),
+    full: d.toLocaleString("en-IN"),
+  };
+};
 const FLOW: OrderStatus[] = ["New", "Cutting/Packing", "Out for delivery", "Delivered"];
+const PAGE_SIZES = [10, 25, 50, 100];
+
+// Local YYYY-MM-DD for a date input (not toISOString, which shifts to UTC).
+const dayKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function Orders() {
   const db = useDB();
-  const delivery = db.staff.filter((s) => s.role === "delivery");
 
-  const next = (cur: OrderStatus): OrderStatus | null => {
-    const i = FLOW.indexOf(cur);
-    return i >= 0 && i < FLOW.length - 1 ? FLOW[i + 1] : null;
+  // Delivery staff come from the database — orders.assigned_to is a FK to staff.id,
+  // so only real staff rows can be assigned.
+  const [delivery, setDelivery] = useState<StaffMember[]>([]);
+  const [staffError, setStaffError] = useState<string | null>(null);
+  const [staffLoading, setStaffLoading] = useState(true);
+
+  const loadStaff = useCallback(() => {
+    setStaffLoading(true);
+    return fetchStaff("delivery")
+      .then((s) => { setDelivery(s); setStaffError(null); })
+      .catch((e) =>
+        setStaffError(
+          // "Failed to fetch" is the browser's network error — say something useful.
+          /failed to fetch/i.test(e?.message || "")
+            ? "Can't reach the server"
+            : e?.message || "Could not load delivery staff"
+        ))
+      .finally(() => setStaffLoading(false));
+  }, []);
+
+  useEffect(() => { loadStaff(); }, [loadStaff]);
+
+  // Retry when the tab regains focus, so a failure while the backend was
+  // restarting doesn't leave the dropdown permanently empty.
+  useEffect(() => {
+    const onFocus = () => { if (staffError) loadStaff(); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [staffError, loadStaff]);
+
+  // ─── Filters ───────────────────────────────────────────────────────────────
+  const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [status, setStatus] = useState<"" | OrderStatus>("");
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const digits = q.replace(/\D/g, "");
+    // `to` is inclusive: compare against the start of the following day.
+    const fromMs = from ? new Date(from + "T00:00:00").getTime() : null;
+    const toMs = to ? new Date(to + "T00:00:00").getTime() + 86_400_000 : null;
+
+    return db.orders.filter((o: Order) => {
+      if (status && o.status !== status) return false;
+
+      if (fromMs !== null || toMs !== null) {
+        const t = o.created_at ? new Date(o.created_at).getTime() : NaN;
+        if (Number.isNaN(t)) return false;
+        if (fromMs !== null && t < fromMs) return false;
+        if (toMs !== null && t >= toMs) return false;
+      }
+
+      if (needle) {
+        const byName = (o.customer_name || "").toLowerCase().includes(needle);
+        const byPhone = digits.length > 0 && (o.customer_phone || "").replace(/\D/g, "").includes(digits);
+        const byNo = String(o.order_no).includes(digits || needle);
+        if (!byName && !byPhone && !byNo) return false;
+      }
+      return true;
+    });
+  }, [db.orders, q, from, to, status]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const current = Math.min(page, pageCount);
+  const start = (current - 1) * pageSize;
+  const rows = filtered.slice(start, start + pageSize);
+
+  // Any filter change puts you back on page 1 — otherwise you can land on a page
+  // that no longer exists and see an empty table.
+  useEffect(() => { setPage(1); }, [q, from, to, status, pageSize]);
+
+  const anyFilter = q !== "" || from !== "" || to !== "" || status !== "";
+  const clearAll = () => { setQ(""); setFrom(""); setTo(""); setStatus(""); };
+
+  const quickRange = (days: number) => {
+    const end = new Date();
+    const begin = new Date();
+    begin.setDate(begin.getDate() - (days - 1));
+    setFrom(dayKey(begin));
+    setTo(dayKey(end));
   };
 
+  // ─── Assignment ────────────────────────────────────────────────────────────
+  // Pending dropdown picks, per order. A selection only takes effect when the
+  // admin presses Assign, so mis-clicking the dropdown doesn't reassign an order.
+  const [pending, setPending] = useState<Record<string, string>>({});
+  const [assigning, setAssigning] = useState<string | null>(null);
+  const staffById = useMemo(
+    () => Object.fromEntries(delivery.map((s) => [s.id, s])),
+    [delivery]
+  );
+
+  const assign = async (id: string, staffId: string) => {
+    setAssigning(id);
+    try {
+      await store.assignOrder(id, staffId);
+      setPending((p) => { const { [id]: _drop, ...rest } = p; return rest; });
+    } catch {
+      window.alert("Could not save the assignment. Please try again.");
+    } finally {
+      setAssigning(null);
+    }
+  };
+
+  // ─── Add a delivery boy (no staff screen exists yet) ───────────────────────
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // The rider signs in to the delivery app with this phone + PIN.
+  const canAdd = newName.trim() !== "" && newPhone.trim() !== "" && newPin.length === 6;
+
+  const addStaff = async () => {
+    if (!canAdd) return;
+    setSaving(true);
+    try {
+      await createStaff({
+        name: newName.trim(), phone: newPhone.trim(), role: "delivery", pin: newPin,
+      });
+      await loadStaff();
+      window.alert(
+        `${newName.trim()} can now sign in at /#/delivery with:\n\n` +
+        `Phone: ${newPhone.trim()}\nPIN: ${newPin}\n\nShare these with them.`
+      );
+      setNewName(""); setNewPhone(""); setNewPin(""); setShowAdd(false);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not add delivery boy");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Reset a forgotten PIN.
+  const resetPin = async (s: StaffMember) => {
+    const pin = window.prompt(`New 6-digit PIN for ${s.name}:`);
+    if (pin === null) return;
+    if (!/^\d{6}$/.test(pin)) { window.alert("PIN must be exactly 6 digits."); return; }
+    try {
+      await resetStaffPin(s.id, pin);
+      window.alert(`${s.name}'s PIN is now ${pin}. Share it with them.`);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not reset PIN");
+    }
+  };
+
+  // ─── Status actions ────────────────────────────────────────────────────────
   const approve = (id: string, orderNo: number) => {
     if (window.confirm(`Approve order #${orderNo}?\n\nThis sends the customer a WhatsApp "Order Confirmed" message.`))
       store.setOrderStatus(id, "Cutting/Packing");
   };
 
-  const advance = (id: string, orderNo: number, to: OrderStatus) => {
-    if (to === "Out for delivery") {
-      const name = window.prompt(`Delivery agent name for order #${orderNo}?`);
-      if (name === null) return; // cancelled
-      const phone = window.prompt("Delivery agent phone (optional):") || "";
-      store.setOrderStatus(id, to, { agentName: name.trim(), agentPhone: phone.trim() });
-    } else if (to === "Delivered") {
-      if (window.confirm(`Mark order #${orderNo} as delivered? This notifies the customer.`))
-        store.setOrderStatus(id, to);
-    } else {
-      store.setOrderStatus(id, to);
+  // Delivery-agent details come from the assigned staff member — no retyping.
+  const sendOut = (o: Order) => {
+    const agent = o.assigned_to ? staffById[o.assigned_to] : undefined;
+    if (!agent) return;
+    if (window.confirm(
+      `Send order #${o.order_no} out for delivery with ${agent.name}?\n\n` +
+      `The customer gets a WhatsApp update with the delivery agent's name and number.`
+    )) {
+      store.setOrderStatus(o.id, "Out for delivery", { agentName: agent.name, agentPhone: agent.phone });
     }
+  };
+
+  const markDelivered = (o: Order) => {
+    if (window.confirm(`Mark order #${o.order_no} as delivered? This notifies the customer.`))
+      store.setOrderStatus(o.id, "Delivered");
   };
 
   return (
@@ -40,50 +208,221 @@ export default function Orders() {
         <div><h1>Orders</h1><div className="sub">Move through the flow · assign a delivery boy</div></div>
       </div>
 
+      {/* ─── Filter bar ─────────────────────────────────────────────────────── */}
+      <div className="panel filters">
+        <div className="filter-field grow">
+          <label htmlFor="f-q">Search name, phone or order #</label>
+          <input
+            id="f-q"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="e.g. Gowtham, 9154217648, 47"
+          />
+        </div>
+        <div className="filter-field">
+          <label htmlFor="f-from">From</label>
+          <input id="f-from" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div className="filter-field">
+          <label htmlFor="f-to">To</label>
+          <input id="f-to" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+        </div>
+        <div className="filter-field">
+          <label htmlFor="f-status">Status</label>
+          <select id="f-status" value={status} onChange={(e) => setStatus(e.target.value as OrderStatus | "")}>
+            <option value="">All</option>
+            {FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        <div className="filter-actions">
+          <button className="btn sm ghost" onClick={() => quickRange(1)}>Today</button>
+          <button className="btn sm ghost" onClick={() => quickRange(7)}>7 days</button>
+          <button className="btn sm ghost" onClick={() => quickRange(30)}>30 days</button>
+          {anyFilter && <button className="btn sm" onClick={clearAll}>✕ Clear</button>}
+        </div>
+      </div>
+
+      {/* ─── Delivery staff ─────────────────────────────────────────────────── */}
+      <div className="panel staff-bar">
+        <span className="muted">
+          🛵 Delivery staff:{" "}
+          {staffLoading ? "loading…"
+            : staffError ? <span style={{ color: "#c0392b" }}>{staffError}</span>
+            : delivery.length === 0 ? <b>none yet — add one before dispatching</b>
+            : delivery.map((d) => (
+                <span key={d.id} className="staff-chip">
+                  {d.name} <span className="muted">({d.phone})</span>
+                  <span title={d.telegram_chat_id
+                    ? "Telegram linked — gets a ping on assignment"
+                    : "Not on Telegram yet — ask them to open the bot and share their number"}>
+                    {d.telegram_chat_id ? "✈️" : "⚠️"}
+                  </span>
+                  <button className="linkish" title="Reset PIN" onClick={() => resetPin(d)}>🔑</button>
+                </span>
+              ))}
+        </span>
+        {staffError && !staffLoading && (
+          <button className="btn sm" onClick={() => loadStaff()}>↻ Retry</button>
+        )}
+        {!showAdd && (
+          <button className="btn sm ghost" onClick={() => setShowAdd(true)}>＋ Add delivery boy</button>
+        )}
+        {showAdd && (
+          <span className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Name"
+              style={{ width: 150 }}
+            />
+            <input
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+              placeholder="+91 90000 00001"
+              style={{ width: 170 }}
+            />
+            <input
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="6-digit PIN"
+              inputMode="numeric"
+              style={{ width: 120 }}
+            />
+            <button className="btn sm primary" disabled={saving || !canAdd} onClick={addStaff}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button
+              className="btn sm ghost"
+              onClick={() => { setShowAdd(false); setNewName(""); setNewPhone(""); setNewPin(""); }}
+            >
+              Cancel
+            </button>
+          </span>
+        )}
+      </div>
+
       <div className="panel">
+        <div className="list-meta">
+          <span className="muted">
+            {filtered.length === 0
+              ? "No matching orders"
+              : `Showing ${start + 1}–${Math.min(start + pageSize, filtered.length)} of ${filtered.length}`}
+            {anyFilter && db.orders.length !== filtered.length ? ` (filtered from ${db.orders.length})` : ""}
+          </span>
+          <span className="row" style={{ gap: 6 }}>
+            <label htmlFor="f-size" style={{ margin: 0 }}>Per page</label>
+            <select
+              id="f-size"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              style={{ width: "auto" }}
+            >
+              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </span>
+        </div>
+
         {db.orders.length === 0 ? (
           <p className="muted">No orders yet. Create one from <b>New Order</b>.</p>
+        ) : filtered.length === 0 ? (
+          <p className="muted">
+            No orders match these filters. <button className="btn sm ghost" onClick={clearAll}>Clear filters</button>
+          </p>
         ) : (
-          <table>
-            <thead>
-              <tr><th>#</th><th>Customer</th><th>Items</th><th>Total</th><th>Pay</th><th>Status</th><th>Assign</th><th>Action</th></tr>
-            </thead>
-            <tbody>
-              {db.orders.map((o) => {
-                const nx = next(o.status);
-                return (
-                  <tr key={o.id}>
-                    <td><Link to={`/orders/${o.id}`}>#{o.order_no}</Link></td>
-                    <td>
-                      <Link to={`/orders/${o.id}`}>{o.customer_name}</Link>
-                      <div className="muted" style={{ fontSize: 11 }}>{o.area}</div>
-                    </td>
-                    <td className="muted">
-                      <Link to={`/orders/${o.id}`} style={{ color: "inherit" }}>
-                        {o.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}
-                      </Link>
-                    </td>
-                    <td>{inr(o.grand_total)}</td>
-                    <td><span className={"pill " + o.payment_status}>{o.payment_method}</span></td>
-                    <td><span className={"pill " + o.status.replace(/[\/ ].*/, "")}>{o.status}</span></td>
-                    <td>
-                      <select value={o.assigned_to ?? ""} onChange={(e) => store.assignOrder(o.id, e.target.value)}>
-                        <option value="">—</option>
-                        {delivery.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                      </select>
-                    </td>
-                    <td>
-                      {o.status === "New" ? (
-                        <button className="btn sm primary" onClick={() => approve(o.id, o.order_no)}>✓ Approve</button>
-                      ) : nx ? (
-                        <button className="btn sm" onClick={() => advance(o.id, o.order_no, nx)}>→ {nx}</button>
-                      ) : o.status === "Delivered" ? <span className="free">✓ Done</span> : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <>
+            <table>
+              <thead>
+                <tr><th>#</th><th>Placed</th><th>Customer</th><th>Items</th><th>Total</th><th>Pay</th><th>Status</th><th>Assign</th><th>Action</th></tr>
+              </thead>
+              <tbody>
+                {rows.map((o) => {
+                  const picked = pending[o.id] ?? o.assigned_to ?? "";
+                  const agent = o.assigned_to ? staffById[o.assigned_to] : undefined;
+                  const placed = placedOn(o.created_at);
+                  return (
+                    <tr key={o.id}>
+                      <td><Link to={`/orders/${o.id}`}>#{o.order_no}</Link></td>
+                      <td className="nowrap" title={placed?.full}>
+                        {placed ? (
+                          <>
+                            {placed.date}
+                            <div className="muted" style={{ fontSize: 11 }}>{placed.time}</div>
+                          </>
+                        ) : <span className="muted">—</span>}
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <Link to={`/orders/${o.id}`}>{o.customer_name}</Link>
+                          <CustomerBadge order={o} />
+                        </div>
+                        <div><CustomerPhone phone={o.customer_phone} compact /></div>
+                        <div className="muted" style={{ fontSize: 11 }}>{o.area}</div>
+                      </td>
+                      <td className="muted">
+                        <Link to={`/orders/${o.id}`} style={{ color: "inherit" }}>
+                          {o.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}
+                        </Link>
+                      </td>
+                      <td>{inr(o.grand_total)}</td>
+                      <td><span className={"pill " + o.payment_status}>{o.payment_method}</span></td>
+                      <td><span className={"pill " + o.status.replace(/[\/ ].*/, "")}>{o.status}</span></td>
+                      <td>
+                        <div className="assign-cell">
+                          <select
+                            value={picked}
+                            disabled={o.status === "Delivered" || delivery.length === 0}
+                            onChange={(e) => setPending((p) => ({ ...p, [o.id]: e.target.value }))}
+                          >
+                            <option value="">{delivery.length === 0 ? "— no staff —" : "— select —"}</option>
+                            {delivery.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                          </select>
+                          <button
+                            className="btn sm"
+                            disabled={!picked || picked === o.assigned_to || assigning === o.id}
+                            onClick={() => assign(o.id, picked)}
+                          >
+                            {assigning === o.id ? "…" : "Assign"}
+                          </button>
+                        </div>
+                        {agent && (
+                          <div className="muted" style={{ fontSize: 11, marginTop: 3 }}>
+                            ✓ {agent.name} · {agent.phone}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {o.status === "New" ? (
+                          <button className="btn sm primary" onClick={() => approve(o.id, o.order_no)}>✓ Approve</button>
+                        ) : o.status === "Cutting/Packing" ? (
+                          <button
+                            className="btn sm primary"
+                            disabled={!agent}
+                            title={agent ? `Dispatch with ${agent.name}` : "Assign a delivery boy first"}
+                            onClick={() => sendOut(o)}
+                          >
+                            🛵 Out for delivery
+                          </button>
+                        ) : o.status === "Out for delivery" ? (
+                          <button className="btn sm" onClick={() => markDelivered(o)}>✓ Delivered</button>
+                        ) : o.status === "Delivered" ? <span className="free">✓ Done</span> : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {pageCount > 1 && (
+              <div className="pager">
+                <button className="btn sm ghost" disabled={current === 1} onClick={() => setPage(1)}>« First</button>
+                <button className="btn sm ghost" disabled={current === 1} onClick={() => setPage(current - 1)}>‹ Prev</button>
+                <span className="muted">Page {current} of {pageCount}</span>
+                <button className="btn sm ghost" disabled={current === pageCount} onClick={() => setPage(current + 1)}>Next ›</button>
+                <button className="btn sm ghost" disabled={current === pageCount} onClick={() => setPage(pageCount)}>Last »</button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>

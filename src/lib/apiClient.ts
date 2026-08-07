@@ -103,6 +103,63 @@ export async function patchOrderStatus(
   });
 }
 
+// ─── Delivery staff ──────────────────────────────────────────────────────────
+// Staff live in the database (orders.assigned_to is a FK to staff.id), so the
+// dropdown and the assignment both work across browsers and machines.
+export interface StaffMember {
+  id: string;
+  name: string;
+  phone: string;
+  role: "admin" | "delivery";
+  active: boolean;
+  /** Set once the rider links their Telegram; null = they get no Telegram ping. */
+  telegram_chat_id?: string | null;
+}
+
+export async function fetchStaff(role?: "delivery" | "admin"): Promise<StaffMember[]> {
+  const res = await authFetch(`admin/staff${role ? `?role=${role}` : ""}`);
+  return (await res.json()) as StaffMember[];
+}
+
+export async function createStaff(input: {
+  name: string;
+  phone: string;
+  role?: "delivery" | "admin";
+  /** Exactly 6 digits — required for delivery staff, who sign in with it. */
+  pin?: string;
+}): Promise<StaffMember> {
+  const res = await authFetch("admin/staff", { method: "POST", body: JSON.stringify(input) });
+  const rows = (await res.json()) as StaffMember[];
+  return rows[0];
+}
+
+// Reset a rider's PIN (they forgot it). The plain PIN is hashed server-side.
+export async function resetStaffPin(staffId: string, pin: string): Promise<void> {
+  await authFetch(`admin/staff/${encodeURIComponent(staffId)}/pin`, {
+    method: "PATCH",
+    body: JSON.stringify({ pin }),
+  });
+}
+
+// Admin acting for a rider with no signal: set delivery status and/or a remark.
+export async function patchOrderDelivery(
+  orderId: string,
+  input: { status?: string; remarks?: string }
+): Promise<void> {
+  await authFetch(`admin/orders/${encodeURIComponent(orderId)}/delivery`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+// Persist the delivery boy on the order. Pass null to clear.
+export async function patchOrderAssign(orderId: string, staffId: string | null): Promise<void> {
+  await authFetch(`admin/orders/${encodeURIComponent(orderId)}/assign`, {
+    method: "PATCH",
+    body: JSON.stringify({ staff_id: staffId }),
+  });
+}
+
 // ─── Order detail ────────────────────────────────────────────────────────────
 export interface OrderDetailLine {
   name: string;
@@ -122,6 +179,16 @@ export interface OrderDetail {
   created_at?: string;
   delivered_at?: string | null;
   customer_name: string;
+  customer_phone?: string | null;
+  is_new_customer?: boolean;
+  customer_order_seq?: number;
+  customer_order_count?: number;
+  assigned_to?: string | null;
+  agent_name?: string | null;
+  agent_phone?: string | null;
+  remarks?: string | null;
+  remarks_at?: string | null;
+  remarks_by?: string | null;
   delivery_address?: string | null;
   branch?: string | null;
   distance_km: number;

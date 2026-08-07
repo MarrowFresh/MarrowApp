@@ -6,7 +6,7 @@
 import type {
   Banner, Combo, Coupon, Customer, Order, Product, Rule, Settings, Staff,
 } from "./types";
-import { fetchOrders, patchOrderStatus, hasApi, auth } from "./apiClient";
+import { fetchOrders, patchOrderStatus, patchOrderAssign, hasApi, auth } from "./apiClient";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -255,11 +255,25 @@ export const store = {
       await store.refreshOrders();
     }
   },
-  assignOrder(id: string, staffId: string) {
+  // Assign a delivery boy. Updates locally first (so the table and the delivery
+  // app react immediately), then persists to the backend — orders.assigned_to is
+  // a real FK to staff.id, so the assignment survives a refresh or another device.
+  async assignOrder(id: string, staffId: string) {
     const o = db.orders.find((x) => x.id === id);
+    const previous = o?.assigned_to;
     if (o) {
-      o.assigned_to = staffId;
+      o.assigned_to = staffId || undefined;
       persist();
+    }
+
+    if (!hasApi || !auth.isAuthed()) return;
+    try {
+      await patchOrderAssign(id, staffId || null);
+    } catch (e) {
+      // Roll back so the UI doesn't claim an assignment the server rejected.
+      console.warn("[admin] failed to persist assignment", e);
+      if (o) { o.assigned_to = previous; persist(); }
+      throw e;
     }
   },
   markPaid(id: string) {
