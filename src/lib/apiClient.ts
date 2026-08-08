@@ -160,6 +160,55 @@ export async function patchOrderAssign(orderId: string, staffId: string | null):
   });
 }
 
+// ─── Catalog & config (settings, coupons, rules, products, banners) ──────────
+//
+// These used to live in localStorage, which meant an edit here never reached the
+// database — the bot, the website and the pricing engine kept reading the seeded
+// values. Everything now goes through the backend.
+//
+// Deactivate rather than delete: orders reference products and coupon codes, so
+// removing a row would orphan history.
+async function getJson<T>(path: string): Promise<T> {
+  const res = await authFetch(path);
+  return (await res.json()) as T;
+}
+
+const send = (path: string, method: string, body?: unknown) =>
+  authFetch(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+
+export const adminApi = {
+  // settings is a single row
+  getSettings: async () => (await getJson<any[]>("admin/settings"))[0] ?? null,
+  saveSettings: (patch: Record<string, unknown>) => send("admin/settings", "PUT", patch),
+
+  getCoupons: () => getJson<any[]>("admin/coupons"),
+  createCoupon: (c: Record<string, unknown>) => send("admin/coupons", "POST", c),
+  updateCoupon: (id: string, c: Record<string, unknown>) =>
+    send(`admin/coupons/${encodeURIComponent(id)}`, "PATCH", c),
+  deactivateCoupon: (id: string) => send(`admin/coupons/${encodeURIComponent(id)}`, "DELETE"),
+
+  getRules: () => getJson<any[]>("admin/rules"),
+  createRule: (r: Record<string, unknown>) => send("admin/rules", "POST", r),
+  updateRule: (id: string, r: Record<string, unknown>) =>
+    send(`admin/rules/${encodeURIComponent(id)}`, "PATCH", r),
+  deactivateRule: (id: string) => send(`admin/rules/${encodeURIComponent(id)}`, "DELETE"),
+
+  getProducts: () => getJson<any[]>("admin/products"),
+  updateProduct: (id: string, p: Record<string, unknown>) =>
+    send(`admin/products/${encodeURIComponent(id)}`, "PATCH", p),
+  deactivateProduct: (id: string) => send(`admin/products/${encodeURIComponent(id)}`, "DELETE"),
+  updateVariant: (id: string, v: Record<string, unknown>) =>
+    send(`admin/variants/${encodeURIComponent(id)}`, "PATCH", v),
+
+  getContacts: () => getJson<any>("admin/contacts"),
+
+  getBanners: () => getJson<any[]>("admin/banners"),
+  createBanner: (b: Record<string, unknown>) => send("admin/banners", "POST", b),
+  updateBanner: (id: string, b: Record<string, unknown>) =>
+    send(`admin/banners/${encodeURIComponent(id)}`, "PATCH", b),
+  deactivateBanner: (id: string) => send(`admin/banners/${encodeURIComponent(id)}`, "DELETE"),
+};
+
 // ─── Order detail ────────────────────────────────────────────────────────────
 export interface OrderDetailLine {
   name: string;

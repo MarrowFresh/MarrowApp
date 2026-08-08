@@ -4,7 +4,8 @@ export type Category =
   | "Chicken" | "Mutton" | "Fish" | "Prawns" | "Crabs" | "Eggs";
 
 export type OrderStatus =
-  | "New" | "Cutting/Packing" | "Out for delivery" | "Delivered" | "Cancelled";
+  // "Draft" = a website cart saved at checkout, not yet confirmed on WhatsApp.
+  | "Draft" | "New" | "Cutting/Packing" | "Out for delivery" | "Delivered" | "Cancelled";
 
 export interface Product {
   id: string;

@@ -5,19 +5,24 @@ const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
 export default function Dashboard() {
   const db = useDB();
   const today = new Date().toDateString();
-  const todays = db.orders.filter(
+
+  // "Draft" is a website cart the customer never confirmed on WhatsApp. It isn't a
+  // sale and isn't work — counting it would inflate revenue and the pending queue.
+  const real = db.orders.filter((o) => o.status !== "Draft");
+
+  const todays = real.filter(
     (o) => new Date(o.created_at).toDateString() === today
   );
-  const revenue = db.orders
+  const revenue = real
     .filter((o) => o.status !== "Cancelled")
     .reduce((s, o) => s + o.grand_total, 0);
-  const pending = db.orders.filter(
+  const pending = real.filter(
     (o) => o.status !== "Delivered" && o.status !== "Cancelled"
   ).length;
 
   // top item by qty
   const counts: Record<string, number> = {};
-  db.orders.forEach((o) =>
+  real.forEach((o) =>
     o.lines.forEach((l) => (counts[l.name] = (counts[l.name] || 0) + l.qty))
   );
   const top =
@@ -34,20 +39,20 @@ export default function Dashboard() {
 
       <div className="cards">
         <div className="card"><div className="k">Orders today</div><div className="v acc">{todays.length}</div></div>
-        <div className="card"><div className="k">Total orders</div><div className="v">{db.orders.length}</div></div>
+        <div className="card"><div className="k">Total orders</div><div className="v">{real.length}</div></div>
         <div className="card"><div className="k">Revenue (all)</div><div className="v">{inr(revenue)}</div></div>
         <div className="card"><div className="k">Pending</div><div className="v acc">{pending}</div></div>
       </div>
 
       <div className="panel">
         <h2>Recent orders</h2>
-        {db.orders.length === 0 ? (
+        {real.length === 0 ? (
           <p className="muted">No orders yet. Create one from <b>New Order</b> — type in a WhatsApp order to get started.</p>
         ) : (
           <table>
             <thead><tr><th>#</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
             <tbody>
-              {db.orders.slice(0, 6).map((o) => (
+              {real.slice(0, 6).map((o) => (
                 <tr key={o.id}>
                   <td>#{o.order_no}</td>
                   <td>{o.customer_name}</td>

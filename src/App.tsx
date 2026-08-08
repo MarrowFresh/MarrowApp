@@ -8,6 +8,7 @@ import Products from "./pages/Products";
 import Coupons from "./pages/Coupons";
 import Rules from "./pages/Rules";
 import Banners from "./pages/Banners";
+import Contacts from "./pages/Contacts";
 import SettingsPage from "./pages/Settings";
 import Login from "./pages/Login";
 import DeliveryApp from "./delivery/DeliveryApp";
@@ -42,6 +43,7 @@ function Sidebar() {
         <NavLink to="/coupons" className={link}>🎟️ Coupons</NavLink>
         <NavLink to="/rules" className={link}>📐 Rules</NavLink>
         <NavLink to="/banners" className={link}>🖼️ Banners</NavLink>
+        <NavLink to="/contacts" className={link}>📇 Contacts</NavLink>
         <NavLink to="/settings" className={link}>⚙️ Settings</NavLink>
       </nav>
       <a className="open-delivery" href="#/shop" target="_blank" rel="noreferrer">
@@ -72,6 +74,7 @@ function AdminLayout() {
           <Route path="/coupons" element={<Coupons />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/banners" element={<Banners />} />
+          <Route path="/contacts" element={<Contacts />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>

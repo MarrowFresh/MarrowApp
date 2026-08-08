@@ -20,6 +20,10 @@ const placedOn = (iso?: string) => {
   };
 };
 const FLOW: OrderStatus[] = ["New", "Cutting/Packing", "Out for delivery", "Delivered"];
+// Website carts the customer hasn't confirmed on WhatsApp yet. Hidden by default —
+// they aren't work until confirmed — but reachable via the Status filter so you can
+// call someone who dropped off at the handoff.
+const DRAFT = "Draft";
 const PAGE_SIZES = [10, 25, 50, 100];
 
 // Local YYYY-MM-DD for a date input (not toISOString, which shifts to UTC).
@@ -75,6 +79,8 @@ export default function Orders() {
     const toMs = to ? new Date(to + "T00:00:00").getTime() + 86_400_000 : null;
 
     return db.orders.filter((o: Order) => {
+      // Drafts only appear when explicitly asked for.
+      if (o.status === DRAFT && status !== DRAFT) return false;
       if (status && o.status !== status) return false;
 
       if (fromMs !== null || toMs !== null) {
@@ -232,6 +238,7 @@ export default function Orders() {
           <select id="f-status" value={status} onChange={(e) => setStatus(e.target.value as OrderStatus | "")}>
             <option value="">All</option>
             {FLOW.map((s) => <option key={s} value={s}>{s}</option>)}
+            <option value={DRAFT}>Draft (unconfirmed website carts)</option>
           </select>
         </div>
 

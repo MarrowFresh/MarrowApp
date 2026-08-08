@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useDB } from "../useStore";
-import { store } from "../lib/data";
+import { adminApi } from "../lib/apiClient";
+import { useResource } from "../lib/useResource";
 import type { Banner } from "../lib/types";
 
 const blank = (): Banner => ({
@@ -11,14 +11,33 @@ const blank = (): Banner => ({
 const PLACEMENTS: Banner["placement"][] = ["home_hero", "carousel", "popup", "strip"];
 
 export default function Banners() {
-  const db = useDB();
+  // Banners come from the database, so the storefront shows what's set here.
+  const { data: banners, loading, error, saving, mutate } =
+    useResource<Banner[]>(adminApi.getBanners as unknown as () => Promise<Banner[]>, []);
+
   const [b, setB] = useState<Banner>(blank());
   const set = (p: Partial<Banner>) => setB({ ...b, ...p });
 
-  const save = () => {
-    if (!b.title) return;
-    store.upsertBanner({ ...b, id: store.uid() });
-    setB(blank());
+  const save = async () => {
+    if (!b.title.trim()) return;
+    const ok = await mutate(() => adminApi.createBanner({
+      title: b.title.trim(),
+      image_url: b.image_url || null,
+      link_to: b.link_to || null,
+      placement: b.placement,
+      start_date: b.start_date || null,
+      end_date: b.end_date || null,
+      active: true,
+      sort_order: banners.length + 1,
+    }));
+    if (ok) setB(blank());
+  };
+
+  const toggle = (x: Banner) => mutate(() => adminApi.updateBanner(x.id, { active: !x.active }));
+
+  const turnOff = (x: Banner) => {
+    if (window.confirm(`Turn off "${x.title}"?\n\nIt disappears from the site immediately.`))
+      mutate(() => adminApi.deactivateBanner(x.id));
   };
 
   const live = (x: Banner) => {
@@ -57,17 +76,17 @@ export default function Banners() {
           <div><label>End date</label><input type="date" value={b.end_date ?? ""}
             onChange={(e) => set({ end_date: e.target.value || undefined })} /></div>
           <div style={{ alignSelf: "end" }}>
-            <button className="btn primary" disabled={!b.title} onClick={save}>Add banner</button>
+            <button className="btn primary" disabled={saving || !b.title.trim()} onClick={save}>{saving ? "Saving…" : "Add banner"}</button>
           </div>
         </div>
       </div>
 
       <div className="panel">
-        <h2>Banners ({db.banners.length})</h2>
+        <h2>Banners ({banners.length})</h2>
         <table>
           <thead><tr><th>Title</th><th>Placement</th><th>Links to</th><th>Schedule</th><th>Live now</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {db.banners.map((x) => (
+            {banners.map((x) => (
               <tr key={x.id}>
                 <td><b>{x.title}</b></td>
                 <td className="muted">{x.placement}</td>
@@ -76,11 +95,11 @@ export default function Banners() {
                 <td>{live(x) ? <span className="free">● Live</span> : <span className="muted">○ Hidden</span>}</td>
                 <td>
                   <button className={"btn sm " + (x.active ? "accent" : "ghost")}
-                    onClick={() => store.upsertBanner({ ...x, active: !x.active })}>
+                    disabled={saving} onClick={() => toggle(x)}>
                     {x.active ? "On" : "Off"}
                   </button>
                 </td>
-                <td><button className="btn sm ghost" onClick={() => store.deleteBanner(x.id)}>Delete</button></td>
+                <td>{x.active && (<button className="btn sm ghost" disabled={saving} onClick={() => turnOff(x)}>Turn off</button>)}</td>
               </tr>
             ))}
           </tbody>

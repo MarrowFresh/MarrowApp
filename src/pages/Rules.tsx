@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useDB } from "../useStore";
-import { store } from "../lib/data";
+import { adminApi } from "../lib/apiClient";
+import { useResource } from "../lib/useResource";
 import type { Category, Rule, RuleCondition } from "../lib/types";
 
 const CATS: Category[] = ["Chicken", "Mutton", "Fish", "Prawns", "Crabs", "Eggs"];
@@ -20,16 +20,35 @@ function condText(c: RuleCondition) {
 }
 
 export default function Rules() {
-  const db = useDB();
+  // Rules live in the database — the pricing engine evaluates them for every
+  // order, on the website and on WhatsApp alike.
+  const { data: rules, loading, error, saving, mutate } =
+    useResource<Rule[]>(adminApi.getRules as unknown as () => Promise<Rule[]>, []);
+
   const [r, setR] = useState<Rule>(blankRule());
   const setRule = (p: Partial<Rule>) => setR({ ...r, ...p });
   const setCond = (i: number, p: Partial<RuleCondition>) =>
     setR({ ...r, conditions: r.conditions.map((c, j) => (j === i ? { ...c, ...p } : c)) });
 
-  const save = () => {
-    if (!r.name) return;
-    store.upsertRule({ ...r, id: store.uid() });
-    setR(blankRule());
+  const save = async () => {
+    if (!r.name.trim()) return;
+    const ok = await mutate(() => adminApi.createRule({
+      name: r.name.trim(),
+      conditions: r.conditions,
+      match: r.match,
+      waive_delivery: r.waive_delivery,
+      waive_packing: r.waive_packing,
+      active: true,
+      sort_order: rules.length + 1,
+    }));
+    if (ok) setR(blankRule());
+  };
+
+  const toggle = (rule: Rule) => mutate(() => adminApi.updateRule(rule.id, { active: !rule.active }));
+
+  const turnOff = (rule: Rule) => {
+    if (window.confirm(`Turn off "${rule.name}"?\n\nOrders stop qualifying for it immediately.`))
+      mutate(() => adminApi.deactivateRule(rule.id));
   };
 
   return (
@@ -86,16 +105,16 @@ export default function Rules() {
           <label className="row" style={{ margin: 0, gap: 5 }}>
             <input type="checkbox" checked={r.waive_packing} onChange={(e) => setRule({ waive_packing: e.target.checked })} /> Free packing
           </label>
-          <button className="btn primary" style={{ marginLeft: "auto" }} disabled={!r.name} onClick={save}>Add rule</button>
+          <button className="btn primary" style={{ marginLeft: "auto" }} disabled={saving || !r.name.trim()} onClick={save}>{saving ? "Saving…" : "Add rule"}</button>
         </div>
       </div>
 
       <div className="panel">
-        <h2>Active rules ({db.rules.length})</h2>
+        <h2>Rules ({rules.length})</h2>
         <table>
           <thead><tr><th>Rule</th><th>When</th><th>Gives</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {db.rules.map((rule) => (
+            {rules.map((rule) => (
               <tr key={rule.id}>
                 <td><b>{rule.name}</b></td>
                 <td className="muted">
@@ -106,11 +125,13 @@ export default function Rules() {
                 </td>
                 <td>
                   <button className={"btn sm " + (rule.active ? "accent" : "ghost")}
-                    onClick={() => store.upsertRule({ ...rule, active: !rule.active })}>
+                    disabled={saving} onClick={() => toggle(rule)}>
                     {rule.active ? "On" : "Off"}
                   </button>
                 </td>
-                <td><button className="btn sm ghost" onClick={() => store.deleteRule(rule.id)}>Delete</button></td>
+                <td>{rule.active && (
+                  <button className="btn sm ghost" disabled={saving} onClick={() => turnOff(rule)}>Turn off</button>
+                )}</td>
               </tr>
             ))}
           </tbody>

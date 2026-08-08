@@ -241,7 +241,9 @@ function OrderCard({ o, onDone }: { o: RiderOrder; onDone: () => void }) {
       )}
 
       <div className="dactions">
-        {o.status !== "Out for delivery" && o.status !== "Delivered" && (
+        {/* Only orders the shop has actually accepted can be picked up — a rider
+            must never be able to advance a Cancelled or still-unapproved order. */}
+        {(o.status === "Cutting/Packing" || o.status === "New") && (
           <button
             className="dbtn go full"
             disabled={busy}
