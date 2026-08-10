@@ -20,7 +20,12 @@ export default function SettingsPage() {
   const num = (v: any) => (v === "" || v == null ? 0 : Number(v));
 
   const save = async () => {
+    // Sending 0 for a blank radius would mean "deliver nowhere" — leave the field
+    // out entirely so the server keeps whatever it already has.
+    const radius = num(s.max_delivery_km);
+
     const ok = await mutate(() => adminApi.saveSettings({
+      ...(radius > 0 ? { max_delivery_km: radius } : {}),
       base_delivery_fee:    num(s.base_delivery_fee),
       free_delivery_amount: num(s.free_delivery_amount),
       free_delivery_weight: num(s.free_delivery_weight),
@@ -33,7 +38,6 @@ export default function SettingsPage() {
       platform_fee_value:   num(s.platform_fee_value),
       default_tax_rate:     num(s.default_tax_rate),
       min_order_value:      num(s.min_order_value),
-      max_delivery_km:      num(s.max_delivery_km),
     }));
     if (ok) { setDirty(false); setSaved(true); }
   };

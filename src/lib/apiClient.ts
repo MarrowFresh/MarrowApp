@@ -194,9 +194,14 @@ export const adminApi = {
   deactivateRule: (id: string) => send(`admin/rules/${encodeURIComponent(id)}`, "DELETE"),
 
   getProducts: () => getJson<any[]>("admin/products"),
+  getSubcategories: () => getJson<any[]>("admin/subcategories"),
+  createProduct: (p: Record<string, unknown>) => send("admin/products", "POST", p),
+  addVariant: (productId: string, v: Record<string, unknown>) =>
+    send(`admin/products/${encodeURIComponent(productId)}/variants`, "POST", v),
   updateProduct: (id: string, p: Record<string, unknown>) =>
     send(`admin/products/${encodeURIComponent(id)}`, "PATCH", p),
   deactivateProduct: (id: string) => send(`admin/products/${encodeURIComponent(id)}`, "DELETE"),
+  deleteVariant: (id: string) => send(`admin/variants/${encodeURIComponent(id)}`, "DELETE"),
   updateVariant: (id: string, v: Record<string, unknown>) =>
     send(`admin/variants/${encodeURIComponent(id)}`, "PATCH", v),
 
