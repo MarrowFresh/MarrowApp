@@ -246,3 +246,11 @@ textarea {
 
 /* The inline "add pack" row, tinted so it reads as a form inside the table */
 .addpack-row > td { background: rgba(238, 159, 46, .06); }
+
+/* Live preview of the distance-pricing formula in Settings */
+.fee-preview {
+  display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px;
+  padding: 10px 12px; border-radius: 10px; font-size: 13px;
+  background: rgba(238,159,46,.08); border: 1px dashed var(--saffron);
+  color: #7a5b15;
+}

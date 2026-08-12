@@ -98,6 +98,9 @@ export interface RiderOrder {
   customer_phone?: string | null;
   address?: string | null;
   distance_km: number;
+  /** Exact delivery pin, when the order captured one. */
+  lat?: number | null;
+  lng?: number | null;
   grand_total: number;
   payment_method: string;
   payment_status: string;

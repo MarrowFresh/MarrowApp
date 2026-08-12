@@ -7,6 +7,19 @@ import { useResource } from "../lib/useResource";
 // this browser's localStorage only, which is why edits never changed anything.)
 type Row = Record<string, any>;
 
+// Mirrors PricingService.FeeForDistance so the preview matches what a customer
+// is actually charged. Kept deliberately tiny — the backend stays authoritative.
+function feeAt(km: number, s: Row): string {
+  const baseKm = Number(s.base_delivery_km) || 3;
+  const baseFee = Number(s.base_delivery_fee) || 0;
+  const perKm = Number(s.per_km_fee) || 0;
+  const maxKm = Number(s.max_delivery_km) || 0;
+
+  if (maxKm > 0 && km > maxKm) return "not delivered";
+  const fee = km <= baseKm || perKm <= 0 ? baseFee : baseFee + Math.ceil(km - baseKm) * perKm;
+  return "₹" + fee.toLocaleString("en-IN");
+}
+
 export default function SettingsPage() {
   const { data, loading, error, saving, mutate } = useResource<Row | null>(adminApi.getSettings, null);
   const [s, setS] = useState<Row>({});
@@ -27,6 +40,8 @@ export default function SettingsPage() {
     const ok = await mutate(() => adminApi.saveSettings({
       ...(radius > 0 ? { max_delivery_km: radius } : {}),
       base_delivery_fee:    num(s.base_delivery_fee),
+      base_delivery_km:     num(s.base_delivery_km) > 0 ? num(s.base_delivery_km) : 3,
+      per_km_fee:           num(s.per_km_fee),
       free_delivery_amount: num(s.free_delivery_amount),
       free_delivery_weight: num(s.free_delivery_weight),
       packing_fee_enabled:  !!s.packing_fee_enabled,
@@ -65,26 +80,53 @@ export default function SettingsPage() {
 
       <div className="grid2">
         <div className="panel">
-          <h2>Delivery</h2>
-          <label>Base delivery fee ₹ <span className="muted">(used when we don't know the distance)</span></label>
-          <input type="number" value={s.base_delivery_fee ?? ""}
-            onChange={(e) => set({ base_delivery_fee: e.target.value })} />
+          <h2>Delivery distance &amp; price</h2>
 
-          <label style={{ marginTop: 10 }}>Free delivery above ₹</label>
+          <div className="row" style={{ gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div>
+              <label>Price up to…</label>
+              <input type="number" step="0.5" style={{ width: 90 }} value={s.base_delivery_km ?? ""}
+                onChange={(e) => set({ base_delivery_km: e.target.value })} />
+            </div>
+            <span className="muted" style={{ paddingBottom: 10 }}>km</span>
+            <div>
+              <label>…costs ₹</label>
+              <input type="number" style={{ width: 110 }} value={s.base_delivery_fee ?? ""}
+                onChange={(e) => set({ base_delivery_fee: e.target.value })} />
+            </div>
+          </div>
+
+          <div className="row" style={{ gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginTop: 12 }}>
+            <div>
+              <label>Each extra km costs ₹</label>
+              <input type="number" style={{ width: 110 }} value={s.per_km_fee ?? ""}
+                onChange={(e) => set({ per_km_fee: e.target.value })} />
+            </div>
+            <div>
+              <label>Deliver within (km)</label>
+              <input type="number" step="0.5" style={{ width: 110 }} value={s.max_delivery_km ?? ""}
+                onChange={(e) => set({ max_delivery_km: e.target.value })} />
+            </div>
+          </div>
+
+          {/* Show the shopkeeper what they've just built, at real distances. */}
+          <div className="fee-preview">
+            {[2, Number(s.base_delivery_km) || 3, 5.4, 8].map((km) => (
+              <span key={km}>{km} km → <b>{feeAt(km, s)}</b></span>
+            ))}
+          </div>
+          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+            Part-kilometres round up, so 5.4 km charges 3 extra km. Beyond the limit customers
+            are told "we're not in your area yet". Distance is measured to the nearest branch.
+          </p>
+
+          <label style={{ marginTop: 14 }}>Free delivery above ₹</label>
           <input type="number" value={s.free_delivery_amount ?? ""}
             onChange={(e) => set({ free_delivery_amount: e.target.value })} />
 
           <label style={{ marginTop: 10 }}>…or above weight (kg)</label>
           <input type="number" step="0.1" value={s.free_delivery_weight ?? ""}
             onChange={(e) => set({ free_delivery_weight: e.target.value })} />
-
-          <label style={{ marginTop: 10 }}>Deliver within (km)</label>
-          <input type="number" step="0.5" value={s.max_delivery_km ?? ""}
-            onChange={(e) => set({ max_delivery_km: e.target.value })} />
-          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-            Beyond this, customers are told "we're not in your area yet". Distance is measured
-            to the nearest branch; the price per distance band is set in <b>delivery_bands</b>.
-          </p>
         </div>
 
         <div className="panel">

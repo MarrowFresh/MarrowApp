@@ -159,9 +159,17 @@ function OrderCard({ o, onDone }: { o: RiderOrder; onDone: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
-  const mapHref =
-    "https://www.google.com/maps/search/?api=1&query=" +
-    encodeURIComponent(`${o.address ?? ""} Hyderabad`);
+  // Navigate to the exact pin the customer dropped when we have one. Google's
+  // universal URL opens the Maps *app* on Android and iOS when it's installed,
+  // and the website otherwise — no per-platform URL scheme needed.
+  //
+  // Falling back to an address text search is a poor second: "Flat 392, first
+  // floor" doesn't resolve, which is why riders were being sent nowhere.
+  const hasPin = o.lat != null && o.lng != null;
+  const mapHref = hasPin
+    ? `https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lng}&travelmode=driving`
+    : "https://www.google.com/maps/search/?api=1&query=" +
+      encodeURIComponent(`${o.address ?? ""} Hyderabad`);
   const telHref = `tel:+${(o.customer_phone || "").replace(/\D/g, "")}`;
 
   const run = async (input: { status?: string; remarks?: string }, confirmMsg?: string) => {
@@ -213,8 +221,17 @@ function OrderCard({ o, onDone }: { o: RiderOrder; onDone: () => void }) {
 
       {err && <div className="derror">{err}</div>}
 
+      {!hasPin && (
+        <div className="dnote">
+          ⚠️ No location pin on this order — Maps will search the address text,
+          which may not find it. Call the customer if you're unsure.
+        </div>
+      )}
+
       <div className="dactions">
-        <a className="dbtn map" href={mapHref} target="_blank" rel="noreferrer">🗺️ Maps</a>
+        <a className="dbtn map" href={mapHref} target="_blank" rel="noreferrer">
+          {hasPin ? "🧭 Navigate" : "🗺️ Maps"}
+        </a>
         {o.customer_phone && <a className="dbtn call" href={telHref}>📞 Call</a>}
         <button className="dbtn note" onClick={() => setOpen((v) => !v)}>
           📝 {open ? "Close" : "Remark"}
