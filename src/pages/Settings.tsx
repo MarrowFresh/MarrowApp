@@ -53,6 +53,11 @@ export default function SettingsPage() {
       platform_fee_value:   num(s.platform_fee_value),
       default_tax_rate:     num(s.default_tax_rate),
       min_order_value:      num(s.min_order_value),
+      // Blank UPI details would silently send customers a link to pay nobody, so
+      // only submit them when they're actually filled in.
+      ...(String(s.upi_vpa || "").trim()        ? { upi_vpa: String(s.upi_vpa).trim() } : {}),
+      ...(String(s.upi_payee_name || "").trim() ? { upi_payee_name: String(s.upi_payee_name).trim() } : {}),
+      cod_max_amount:       num(s.cod_max_amount),
     }));
     if (ok) { setDirty(false); setSaved(true); }
   };
@@ -147,6 +152,26 @@ export default function SettingsPage() {
           <label style={{ marginTop: 10 }}>…or above weight (kg)</label>
           <input type="number" step="0.1" value={s.free_packing_weight ?? ""} disabled={!s.packing_fee_enabled}
             onChange={(e) => set({ free_packing_weight: e.target.value })} />
+        </div>
+
+        <div className="panel">
+          <h2>Payments</h2>
+          <label>UPI ID (money arrives here)</label>
+          <input value={s.upi_vpa ?? ""} placeholder="8143325727@hdfc"
+            onChange={(e) => set({ upi_vpa: e.target.value })} />
+
+          <label style={{ marginTop: 10 }}>Payee name shown in the UPI app</label>
+          <input value={s.upi_payee_name ?? ""} placeholder="Marrow Fresh"
+            onChange={(e) => set({ upi_payee_name: e.target.value })} />
+
+          <label style={{ marginTop: 10 }}>Cash on delivery allowed up to ₹</label>
+          <input type="number" value={s.cod_max_amount ?? ""}
+            onChange={(e) => set({ cod_max_amount: e.target.value })} />
+          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+            Bigger orders must pay by UPI first — the customer gets a payment link on
+            WhatsApp and the order waits at <b>Payment pending</b> until you approve it.
+            Set to 0 to stop taking cash altogether.
+          </p>
         </div>
 
         <div className="panel">

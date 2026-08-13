@@ -130,6 +130,14 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 .pill.Cancelled { background: #f2d2cd; color: #8a2a1e; }
 .pill.Paid { background: #cdeccd; color: #226b2f; }
 .pill.Unpaid { background: #f2d2cd; color: #8a2a1e; }
+.pill.Pending { background: #fdf3d8; color: #7a5a12; }
+
+/* Money owed on a UPI order needs to be readable at a glance from across the
+   shop — the pill alone doesn't say whether anyone has checked the bank yet. */
+.paychip { font-size: 10.5px; font-weight: 600; margin-top: 3px; letter-spacing: .01em; }
+.paychip.claimed { color: #8a5a08; }
+.paychip.owed { color: #8a2a1e; }
+.paychip.ok { color: #226b2f; }
 
 .muted { color: var(--muted); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

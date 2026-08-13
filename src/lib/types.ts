@@ -131,7 +131,9 @@ export interface Order {
   tax_total: number;
   grand_total: number;
   payment_method: "UPI" | "Cash";
-  payment_status: "Paid" | "Unpaid";
+  // 'Pending' = the customer says they've paid by UPI and the shop hasn't yet
+  // confirmed the credit in the bank app. There's no gateway to tell us.
+  payment_status: "Paid" | "Unpaid" | "Pending";
   assigned_to?: string;   // staff id
   created_at: string;
 }

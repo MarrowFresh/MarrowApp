@@ -186,9 +186,22 @@ export default function Orders() {
   };
 
   // ─── Status actions ────────────────────────────────────────────────────────
-  const approve = (id: string, orderNo: number) => {
-    if (window.confirm(`Approve order #${orderNo}?\n\nThis sends the customer a WhatsApp "Order Confirmed" message.`))
-      store.setOrderStatus(id, "Cutting/Packing");
+  const approve = (o: Order) => {
+    // A prepaid order is approved on the strength of the customer saying they've
+    // paid, so make the admin look at the bank app first — approving marks it
+    // Paid, and there's no gateway to disagree with them afterwards.
+    const money =
+      o.payment_method === "UPI" && o.payment_status !== "Paid"
+        ? o.payment_status === "Pending"
+          ? `\n\n💰 The customer says they've paid ${inr(o.grand_total)} by UPI.` +
+            `\nCheck your bank app for reference MF${o.order_no} — approving marks this order PAID.`
+          : `\n\n⚠️ This is a UPI order and no payment has been reported yet.`
+        : "";
+
+    if (window.confirm(
+      `Approve order #${o.order_no}?\n\nThis sends the customer a WhatsApp "Order Confirmed" message.${money}`
+    ))
+      store.setOrderStatus(o.id, "Cutting/Packing");
   };
 
   // Delivery-agent details come from the assigned staff member — no retyping.
@@ -372,7 +385,19 @@ export default function Orders() {
                         </Link>
                       </td>
                       <td>{inr(o.grand_total)}</td>
-                      <td><span className={"pill " + o.payment_status}>{o.payment_method}</span></td>
+                      <td>
+                        <span className={"pill " + o.payment_status}>{o.payment_method}</span>
+                        {/* Nothing calls us back when a UPI transfer lands, so the
+                            shop has to see at a glance which orders are still owed. */}
+                        {o.payment_method === "UPI" && o.payment_status !== "Paid" && (
+                          <div className={"paychip " + (o.payment_status === "Pending" ? "claimed" : "owed")}>
+                            {o.payment_status === "Pending" ? "says paid — verify" : "awaiting payment"}
+                          </div>
+                        )}
+                        {o.payment_status === "Paid" && (
+                          <div className="paychip ok">✓ paid</div>
+                        )}
+                      </td>
                       <td><span className={"pill " + o.status.replace(/[\/ ].*/, "")}>{o.status}</span></td>
                       <td>
                         <div className="assign-cell">
@@ -400,7 +425,7 @@ export default function Orders() {
                       </td>
                       <td>
                         {o.status === "New" ? (
-                          <button className="btn sm primary" onClick={() => approve(o.id, o.order_no)}>✓ Approve</button>
+                          <button className="btn sm primary" onClick={() => approve(o)}>✓ Approve</button>
                         ) : o.status === "Cutting/Packing" ? (
                           <button
                             className="btn sm primary"
