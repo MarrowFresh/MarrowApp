@@ -34,23 +34,58 @@ function limits(c: Row) {
 export default function Coupons() {
   const { data: coupons, loading, error, saving, mutate } = useResource<Row[]>(adminApi.getCoupons, []);
   const [d, setD] = useState<Row>(blank());
+  const [editing, setEditing] = useState<string | null>(null);   // coupon id being edited
+  const [clash, setClash] = useState<string | null>(null);       // id of the code that already exists
   const set = (p: Row) => setD((c) => ({ ...c, ...p }));
 
-  const add = async () => {
-    const payload: Row = {
-      code: d.code.trim().toUpperCase(),
-      type: d.type,
-      value: d.type === "free_delivery" ? 0 : Number(d.value || 0),
-      min_order: Number(d.min_order || 0),
-      max_discount: d.type === "percent" && d.max_discount ? Number(d.max_discount) : null,
-      first_order_only: !!d.first_order_only,
-      usage_limit: d.usage_limit ? Number(d.usage_limit) : null,
-      per_customer_limit: d.per_customer_limit ? Number(d.per_customer_limit) : null,
-      valid_from: d.valid_from || null,
-      valid_to: d.valid_to || null,
-      active: true,
-    };
-    if (await mutate(() => adminApi.createCoupon(payload))) setD(blank());
+  // Both buttons build the same shape — the only difference is where it goes.
+  const payload = (): Row => ({
+    code: d.code.trim().toUpperCase(),
+    type: d.type,
+    value: d.type === "free_delivery" ? 0 : Number(d.value || 0),
+    min_order: Number(d.min_order || 0),
+    max_discount: d.type === "percent" && d.max_discount ? Number(d.max_discount) : null,
+    first_order_only: !!d.first_order_only,
+    usage_limit: d.usage_limit ? Number(d.usage_limit) : null,
+    per_customer_limit: d.per_customer_limit ? Number(d.per_customer_limit) : null,
+    valid_from: d.valid_from || null,
+    valid_to: d.valid_to || null,
+  });
+
+  const startEdit = (c: Row) => {
+    setEditing(c.id);
+    setClash(null);
+    setD({
+      ...blank(),
+      ...c,
+      // Date inputs need yyyy-mm-dd, and the API returns timestamps.
+      valid_from: c.valid_from ? String(c.valid_from).slice(0, 10) : "",
+      valid_to: c.valid_to ? String(c.valid_to).slice(0, 10) : "",
+      max_discount: c.max_discount ?? null,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEdit = () => { setEditing(null); setClash(null); setD(blank()); };
+
+  const save = async () => {
+    setClash(null);
+    if (editing) {
+      if (await mutate(() => adminApi.updateCoupon(editing, payload()))) cancelEdit();
+      return;
+    }
+
+    // A code that already exists comes back as a 409 carrying the existing row,
+    // because "turn off" keeps the code — so the usual fix is to edit that one,
+    // not to invent a new code.
+    const ok = await mutate(async () => {
+      const res = await adminApi.createCoupon({ ...payload(), active: true });
+      return res;
+    });
+    if (ok) { setD(blank()); return; }
+
+    const hit = coupons.find((c) => c.code === d.code.trim().toUpperCase());
+    if (hit) setClash(hit.id);
   };
 
   const toggle = (c: Row) => mutate(() => adminApi.updateCoupon(c.id, { active: !c.active }));
@@ -70,9 +105,30 @@ export default function Coupons() {
       {error && <div className="panel"><span style={{ color: "#c0392b" }}>{error}</span></div>}
 
       <div className="panel">
-        <h2>Create coupon</h2>
+        <h2>{editing ? `Edit ${d.code}` : "Create coupon"}</h2>
+
+        {clash && (
+          <div className="clash">
+            <span>
+              <b>{d.code.trim().toUpperCase()}</b> already exists. Codes are kept when a coupon is
+              switched off, so edit that one instead of creating a second.
+            </span>
+            <button
+              className="btn sm accent"
+              onClick={() => {
+                const c = coupons.find((x) => x.id === clash);
+                if (c) startEdit(c);
+              }}
+            >
+              Edit it
+            </button>
+          </div>
+        )}
+
         <div className="row" style={{ flexWrap: "wrap", alignItems: "flex-end", gap: 12 }}>
           <div><label>Code</label><input style={{ width: 130 }} value={d.code}
+            disabled={!!editing}
+            title={editing ? "The code can't change — orders reference it" : undefined}
             onChange={(e) => set({ code: e.target.value.toUpperCase() })} placeholder="WELCOME10" /></div>
 
           <div><label>Type</label>
@@ -112,9 +168,14 @@ export default function Coupons() {
               onChange={(e) => set({ first_order_only: e.target.checked })} /> 1st order only
           </label>
 
-          <button className="btn primary" disabled={saving || !d.code.trim()} onClick={add}>
-            {saving ? "Saving…" : "Add coupon"}
+          <button className="btn primary" disabled={saving || !d.code.trim()} onClick={save}>
+            {saving ? "Saving…" : editing ? "Save changes" : "Add coupon"}
           </button>
+          {editing && (
+            <button className="btn ghost" disabled={saving} onClick={cancelEdit}>
+              Cancel
+            </button>
+          )}
         </div>
       </div>
 
@@ -139,11 +200,16 @@ export default function Coupons() {
                     </button>
                   </td>
                   <td>
-                    {c.active && (
-                      <button className="btn sm ghost" disabled={saving} onClick={() => deactivate(c)}>
-                        Turn off
+                    <div className="row" style={{ gap: 6, margin: 0 }}>
+                      <button className="btn sm ghost" disabled={saving} onClick={() => startEdit(c)}>
+                        ✏️ Edit
                       </button>
-                    )}
+                      {c.active && (
+                        <button className="btn sm ghost" disabled={saving} onClick={() => deactivate(c)}>
+                          Turn off
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
