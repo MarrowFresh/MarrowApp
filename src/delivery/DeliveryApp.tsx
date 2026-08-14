@@ -158,6 +158,7 @@ function OrderCard({ o, onDone }: { o: RiderOrder; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Navigate to the exact pin the customer dropped when we have one. Google's
   // universal URL opens the Maps *app* on Android and iOS when it's installed,
@@ -221,7 +222,25 @@ function OrderCard({ o, onDone }: { o: RiderOrder; onDone: () => void }) {
 
       {err && <div className="derror">{err}</div>}
 
-      {!hasPin && (
+      {hasPin ? (
+        // The coordinates in the open, not just behind the button. When Maps
+        // misbehaves on a cheap handset, being able to read the numbers aloud —
+        // or paste them into another app — is the difference between finding the
+        // door and phoning the shop.
+        <button
+          className="dcoords"
+          onClick={() => {
+            const text = `${o.lat},${o.lng}`;
+            navigator.clipboard?.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+          }}
+          title="Copy the coordinates"
+        >
+          📍 {Number(o.lat).toFixed(5)}, {Number(o.lng).toFixed(5)}
+          <span className="dcopy">{copied ? "copied" : "tap to copy"}</span>
+        </button>
+      ) : (
         <div className="dnote">
           ⚠️ No location pin on this order — Maps will search the address text,
           which may not find it. Call the customer if you're unsure.

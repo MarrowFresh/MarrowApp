@@ -311,3 +311,11 @@ textarea {
        border:1px solid rgba(238,159,46,.42);border-radius:12px;padding:12px 14px;
        margin-bottom:14px;font-size:13.5px;line-height:1.5}
 .clash span{flex:1;min-width:240px}
+
+/* Coordinates on the rider card — readable and copyable, for when Maps fails. */
+.dcoords{display:flex;align-items:center;gap:10px;width:100%;font:inherit;font-size:13px;
+         font-variant-numeric:tabular-nums;background:rgba(46,35,27,.05);
+         border:1px solid rgba(46,35,27,.14);border-radius:10px;padding:9px 12px;
+         margin-top:8px;cursor:pointer;text-align:left;color:inherit}
+.dcoords:active{background:rgba(46,35,27,.1)}
+.dcopy{margin-left:auto;font-size:11px;opacity:.55;text-transform:uppercase;letter-spacing:.08em}
