@@ -171,6 +171,28 @@ export default function OrderDetail() {
             </p>
           )}
           <p className="muted" style={{ whiteSpace: "pre-wrap" }}>{order.delivery_address || "No address on file"}</p>
+          {/* The exact pin, when the customer dropped one. Searching Google for
+              "Flat 392, first floor" is how a rider ends up on the wrong street,
+              so link straight to the coordinates and let the admin read them out
+              or forward them if the rider's app is playing up. */}
+          {order.delivery_lat != null && order.delivery_lng != null ? (
+            <p className="muted pin-row">
+              <a
+                className="pin-link"
+                href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                📍 Open exact location
+              </a>
+              <code>{Number(order.delivery_lat).toFixed(5)}, {Number(order.delivery_lng).toFixed(5)}</code>
+            </p>
+          ) : (
+            <p className="muted" style={{ fontSize: 12 }}>
+              📍 No pin on this order — the customer didn't share a location, so the
+              rider will navigate by address.
+            </p>
+          )}
           <p className="muted">
             Nearest branch: <b>{order.branch || "—"}</b>
             {order.distance_km > 0 ? ` · ${order.distance_km.toFixed(1)} km` : ""}

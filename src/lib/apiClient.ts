@@ -177,6 +177,11 @@ const send = (path: string, method: string, body?: unknown) =>
   authFetch(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
 export const adminApi = {
+  // Launch. getLaunch is public (no token) so the same call works from the site.
+  getLaunch: () => getJson<any>("launch"),
+  startLaunch: () => send('admin/launch/start', 'POST'),
+  resetLaunch: () => send('admin/launch/reset', 'POST'),
+
   // settings is a single row
   getSettings: async () => (await getJson<any[]>("admin/settings"))[0] ?? null,
   saveSettings: (patch: Record<string, unknown>) => send("admin/settings", "PUT", patch),
@@ -246,6 +251,9 @@ export interface OrderDetail {
   delivery_address?: string | null;
   branch?: string | null;
   distance_km: number;
+  // The pin the customer dropped, when they shared one.
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
   instructions?: string | null;
   payment_method: string;
   payment_status: string;

@@ -10,6 +10,7 @@ import Rules from "./pages/Rules";
 import Banners from "./pages/Banners";
 import Contacts from "./pages/Contacts";
 import SettingsPage from "./pages/Settings";
+import Launch from "./pages/Launch";
 import Login from "./pages/Login";
 import DeliveryApp from "./delivery/DeliveryApp";
 import CustomerApp from "./customer/CustomerApp";
@@ -45,6 +46,7 @@ function Sidebar() {
         <NavLink to="/banners" className={link}>🖼️ Banners</NavLink>
         <NavLink to="/contacts" className={link}>📇 Contacts</NavLink>
         <NavLink to="/settings" className={link}>⚙️ Settings</NavLink>
+        <NavLink to="/launch" className={link}>🚀 Launch</NavLink>
       </nav>
       <a className="open-delivery" href="#/shop" target="_blank" rel="noreferrer">
         🛒 Open Customer site →
@@ -76,6 +78,7 @@ function AdminLayout() {
           <Route path="/banners" element={<Banners />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/launch" element={<Launch />} />
         </Routes>
       </main>
 

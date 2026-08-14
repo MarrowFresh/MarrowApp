@@ -262,3 +262,45 @@ textarea {
   background: rgba(238,159,46,.08); border: 1px dashed var(--saffron);
   color: #7a5b15;
 }
+
+/* ── Launch control ───────────────────────────────────────────────────────
+   One button that changes what every customer sees, so it is deliberately the
+   only prominent thing on the page. */
+.launch-card{display:flex; flex-direction:column; gap:20px; max-width:640px}
+.launch-rows{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:18px}
+.launch-rows .k{
+  display:block; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--muted, #7a6857); margin-bottom:6px; font-weight:600;
+}
+.launch-rows .v{font-size:16px; font-weight:500}
+.launch-rows .v.mono{font-variant-numeric:tabular-nums}
+.chip{display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600;
+      padding:6px 13px; border-radius:999px}
+.chip-comingsoon{background:rgba(238,159,46,.16); color:#a9700f}
+.chip-launching{background:rgba(199,71,42,.15); color:#b23f22}
+.chip-live{background:rgba(19,136,8,.14); color:#137a0b}
+.btn-launch{
+  font:inherit; font-size:15.5px; font-weight:600; cursor:pointer; width:100%;
+  background:#2E231B; color:#FFFBF3; border:none; padding:17px 22px; border-radius:14px;
+  transition:transform .25s, box-shadow .25s, opacity .25s;
+}
+.btn-launch:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 14px 30px rgba(46,35,27,.28)}
+.btn-launch:disabled{opacity:.5; cursor:default}
+.btn-launch.danger{background:#C7472A}
+.btn-launch.live{background:rgba(19,136,8,.14); color:#137a0b}
+.btn-quiet{
+  font:inherit; font-size:14px; font-weight:500; cursor:pointer; width:100%;
+  background:none; color:inherit; border:1.4px solid rgba(46,35,27,.2);
+  padding:13px 20px; border-radius:12px;
+}
+.launch-confirm{display:flex; flex-direction:column; gap:14px}
+.launch-confirm p{margin:0; font-size:14.5px; line-height:1.55}
+.launch-confirm-row{display:flex; gap:10px}
+.launch-confirm-row .btn-launch,.launch-confirm-row .btn-quiet{width:auto; flex:1}
+.launch-note{margin:0; font-size:13px; color:var(--muted, #7a6857); line-height:1.6}
+
+/* Exact-location row on the order detail. */
+.pin-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pin-link{font-weight:600;text-decoration:none;color:#C7472A}
+.pin-link:hover{text-decoration:underline}
+.pin-row code{font-size:11.5px;opacity:.7;font-variant-numeric:tabular-nums}
