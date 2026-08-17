@@ -57,6 +57,8 @@ export default function SettingsPage() {
       // only submit them when they're actually filled in.
       ...(String(s.upi_vpa || "").trim()        ? { upi_vpa: String(s.upi_vpa).trim() } : {}),
       ...(String(s.upi_payee_name || "").trim() ? { upi_payee_name: String(s.upi_payee_name).trim() } : {}),
+      // Sent even when blank: clearing it is how you go back to a personal UPI ID.
+      upi_intent:           String(s.upi_intent || "").trim(),
       cod_max_amount:       num(s.cod_max_amount),
     }));
     if (ok) { setDirty(false); setSaved(true); }
@@ -163,6 +165,21 @@ export default function SettingsPage() {
           <label style={{ marginTop: 10 }}>Payee name shown in the UPI app</label>
           <input value={s.upi_payee_name ?? ""} placeholder="Marrow Fresh"
             onChange={(e) => set({ upi_payee_name: e.target.value })} />
+
+          {/* Merchant UPI IDs can't be paid the way a person's can — Google Pay
+              and PhonePe reject a hand-built request and only accept the bank's
+              own signed one. Pasting the QR's contents here fixes that. */}
+          <label style={{ marginTop: 10 }}>Bank QR string <span className="muted">(optional)</span></label>
+          <textarea rows={3} value={s.upi_intent ?? ""} placeholder="upi://pay?pa=...&pn=...&mc=...&sign=..."
+            onChange={(e) => set({ upi_intent: e.target.value })} />
+          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+            Only needed if yours is a <b>merchant</b> UPI ID — the sign that it is:
+            paying by QR works, but typing the UPI ID fails in Google Pay and PhonePe.
+            Scan your bank's QR with any scanner app, copy the whole <code>upi://pay?…</code>
+            text and paste it here. We fill in the amount and order number per order and
+            send everything else, including the bank's signature, exactly as issued.
+            Leave empty for a personal UPI ID.
+          </p>
 
           <label style={{ marginTop: 10 }}>Cash on delivery allowed up to ₹</label>
           <input type="number" value={s.cod_max_amount ?? ""}
