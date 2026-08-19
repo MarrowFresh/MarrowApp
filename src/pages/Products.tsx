@@ -48,6 +48,28 @@ export default function Products() {
     )) mutate(() => adminApi.deleteVariant(v.id));
   };
 
+  // A product created with one pack could not be removed at all: the per-pack
+  // Delete refuses the last pack (it would leave a product with nothing to buy)
+  // and there was no product-level equivalent. This is that equivalent.
+  const removeProduct = (p: Product) => {
+    if (!window.confirm(
+      `Remove ${p.name} from the shop?\n\n` +
+      `It disappears from the website and WhatsApp straight away. Past orders ` +
+      `keep their own copy, so nothing in your history changes.\n\n` +
+      `You can put it back later with the "Hidden" button.`
+    )) return;
+    mutate(() => adminApi.updateProduct(p.id, { available: false }));
+  };
+
+  // Names were fixed at creation, so a typo meant deleting and starting again.
+  const renameProduct = async (p: Product) => {
+    const next = window.prompt("Product name", p.name);
+    if (next === null) return;
+    const name = next.trim();
+    if (name === "" || name === p.name) return;
+    await mutate(() => adminApi.updateProduct(p.id, { name }));
+  };
+
   // Adding a pack to a product that already exists.
   const [addPackFor, setAddPackFor] = useState<string | null>(null);
   const [pack, setPack] = useState<Row>({ label: "", weight_g: 1000, price: "" });
@@ -120,6 +142,16 @@ export default function Products() {
                           onClick={() => setAddPackFor(addPackFor === p.id ? null : p.id)}>
                           ＋ Pack
                         </button>
+                        <button className="btn sm ghost" disabled={saving}
+                          onClick={() => renameProduct(p)} title="Change the name customers see">
+                          ✏️ Rename
+                        </button>
+                        {p.available && (
+                          <button className="btn sm ghost" disabled={saving}
+                            onClick={() => removeProduct(p)} title="Take it off the shop">
+                              🗑 Remove
+                          </button>
+                        )}
                       </div>
                     </td>
                   );
