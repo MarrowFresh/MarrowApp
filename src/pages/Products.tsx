@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { adminApi, uploadProductPhoto } from "../lib/apiClient";
+import { adminApi } from "../lib/apiClient";
 import { useResource } from "../lib/useResource";
 
 // Products and their pack sizes, straight from the database — the same rows the
@@ -68,31 +68,6 @@ export default function Products() {
     const name = next.trim();
     if (name === "" || name === p.name) return;
     await mutate(() => adminApi.updateProduct(p.id, { name }));
-  };
-
-  // A photo per product, uploaded straight from the phone or laptop the shop is
-  // already using. Previously the image had to be committed to the website's repo
-  // and deployed, so most new products simply never got one.
-  const [photoBusy, setPhotoBusy] = useState<string | null>(null);
-
-  const pickPhoto = (p: Product) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/jpeg,image/png,image/webp";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setPhotoBusy(p.id);
-      try {
-        await uploadProductPhoto(p.id, file);
-        await refresh();
-      } catch (e) {
-        window.alert(e instanceof Error ? e.message : "Could not upload that photo");
-      } finally {
-        setPhotoBusy(null);
-      }
-    };
-    input.click();
   };
 
   // Adding a pack to a product that already exists.
@@ -170,11 +145,6 @@ export default function Products() {
                         <button className="btn sm ghost" disabled={saving}
                           onClick={() => renameProduct(p)} title="Change the name customers see">
                           ✏️ Rename
-                        </button>
-                        <button className="btn sm ghost" disabled={saving || photoBusy === p.id}
-                          onClick={() => pickPhoto(p)}
-                          title={p.image_url ? "Replace the photo" : "Add a photo"}>
-                          {photoBusy === p.id ? "Uploading…" : p.image_url ? "🖼 Photo" : "📷 Add photo"}
                         </button>
                         {p.available && (
                           <button className="btn sm ghost" disabled={saving}

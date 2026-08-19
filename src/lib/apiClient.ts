@@ -176,25 +176,6 @@ async function getJson<T>(path: string): Promise<T> {
 const send = (path: string, method: string, body?: unknown) =>
   authFetch(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
-// Photos go straight to Supabase storage through the backend, which holds the
-// key. Multipart, so the browser must set the boundary itself — passing a
-// Content-Type here would break the upload.
-export async function uploadProductPhoto(productId: string, file: File): Promise<string> {
-  const form = new FormData();
-  form.append("file", file);
-  const res = await fetch(`${API_BASE}/api/admin/products/${encodeURIComponent(productId)}/photo`, {
-    method: "POST",
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: form,
-  });
-  if (!res.ok) {
-    let msg = "Upload failed";
-    try { msg = (await res.json()).error || msg; } catch { /* ignore */ }
-    throw new Error(msg);
-  }
-  return (await res.json()).image_url as string;
-}
-
 export const adminApi = {
   // Launch. getLaunch is public (no token) so the same call works from the site.
   getLaunch: () => getJson<any>("launch"),
