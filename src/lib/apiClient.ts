@@ -251,6 +251,10 @@ export interface OrderDetail {
   delivery_address?: string | null;
   branch?: string | null;
   distance_km: number;
+  // What they thought of it, once delivered. Null = not answered.
+  rating?: number | null;
+  feedback?: string | null;
+  feedback_at?: string | null;
   // The pin the customer dropped, when they shared one.
   delivery_lat?: number | null;
   delivery_lng?: number | null;

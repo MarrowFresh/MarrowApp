@@ -197,6 +197,13 @@ export default function OrderDetail() {
             Nearest branch: <b>{order.branch || "—"}</b>
             {order.distance_km > 0 ? ` · ${order.distance_km.toFixed(1)} km` : ""}
           </p>
+          {order.rating != null && (
+            <div className="rating-box">
+              <div className="stars">{"★".repeat(order.rating)}<span>{"★".repeat(5 - order.rating)}</span></div>
+              <b>{order.rating}/5</b>
+              {order.feedback ? <p>“{order.feedback}”</p> : <p className="muted">No comment left.</p>}
+            </div>
+          )}
           <p className="muted">
             Instructions: {order.instructions ? <b>{order.instructions}</b> : <i>none recorded</i>}
           </p>

@@ -319,3 +319,11 @@ textarea {
          margin-top:8px;cursor:pointer;text-align:left;color:inherit}
 .dcoords:active{background:rgba(46,35,27,.1)}
 .dcopy{margin-left:auto;font-size:11px;opacity:.55;text-transform:uppercase;letter-spacing:.08em}
+
+/* Customer rating on the order detail. */
+.rating-box{background:rgba(238,159,46,.1);border:1px solid rgba(238,159,46,.32);border-radius:14px;
+            padding:12px 14px;margin:10px 0;display:flex;flex-direction:column;gap:4px}
+.rating-box .stars{font-size:19px;letter-spacing:2px;color:#E8A020;line-height:1}
+.rating-box .stars span{color:rgba(46,35,27,.22)}
+.rating-box b{font-size:13px}
+.rating-box p{margin:2px 0 0;font-size:14px;line-height:1.5;font-style:italic}
