@@ -1,5 +1,6 @@
 // =====================================================================
 //  MARROW FRESH — Delivery app (App 2)  ·  mobile PWA view
+import { Logo } from "../components/Logo";
 //  A rider signs in with their phone + 6-digit PIN and sees only the
 //  orders assigned to them. They can leave a remark and move an order
 //  to "Out for delivery" and then "Delivered".
@@ -45,7 +46,7 @@ function Login() {
   return (
     <div className="dframe">
       <form className="dlogin" onSubmit={submit}>
-        <div className="dmark">M</div>
+        <Logo onDark height={54} />
         <div className="dbrand big">Marrow<b>Fresh</b></div>
         <div className="dsub">Delivery partner login</div>
 
@@ -108,9 +109,14 @@ function MyOrders() {
   return (
     <div className="dframe">
       <header className="dhead">
-        <div>
-          <div className="dbrand">Marrow<b>Fresh</b></div>
-          <div className="dsub">Delivery · {riderAuth.name()}</div>
+        {/* .dhead is space-between, so the logo and the wordmark have to travel
+            together or the header spreads into three separate islands. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+          <Logo onDark height={32} />
+          <div>
+            <div className="dbrand">Marrow<b>Fresh</b></div>
+            <div className="dsub">Delivery · {riderAuth.name()}</div>
+          </div>
         </div>
         <button className="dlogout" onClick={() => riderAuth.logout()}>Logout</button>
       </header>

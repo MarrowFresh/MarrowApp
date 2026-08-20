@@ -32,6 +32,27 @@ export default function Products() {
       setEdits((e) => { const { [v.id]: _drop, ...rest } = e; return rest; });
   };
 
+  // The struck-through "was" price. Staged separately from the selling price so
+  // typing one never risks saving a half-finished other.
+  const [mrpEdits, setMrpEdits] = useState<Record<string, string>>({});
+  const stageMrp = (id: string, v: string) => setMrpEdits((e) => ({ ...e, [id]: v }));
+
+  const saveMrp = async (v: Variant) => {
+    const raw = mrpEdits[v.id];
+    if (raw === undefined) return;
+    // An empty box means "no discount" — send null, don't refuse to save.
+    const mrp = raw.trim() === "" ? null : Number(raw);
+    if (mrp !== null && (!isFinite(mrp) || mrp <= Number(v.price))) {
+      window.alert(
+        `"Was" must be higher than the selling price of ${inr(v.price)}.\n\n` +
+        `Leave it empty if this pack isn't discounted.`
+      );
+      return;
+    }
+    if (await mutate(() => adminApi.updateVariant(v.id, { mrp })))
+      setMrpEdits((e) => { const { [v.id]: _drop, ...rest } = e; return rest; });
+  };
+
   const toggleVariant = (v: Variant) =>
     mutate(() => adminApi.updateVariant(v.id, { available: !v.available }));
 
@@ -72,7 +93,7 @@ export default function Products() {
 
   // Adding a pack to a product that already exists.
   const [addPackFor, setAddPackFor] = useState<string | null>(null);
-  const [pack, setPack] = useState<Row>({ label: "", weight_g: 1000, price: "" });
+  const [pack, setPack] = useState<Row>({ label: "", weight_g: 1000, price: "", mrp: "" });
 
   const addPack = async (productId: string) => {
     if (!(Number(pack.price) > 0 && Number(pack.weight_g) > 0)) return;
@@ -80,8 +101,9 @@ export default function Products() {
       label: pack.label || `${pack.weight_g}g`,
       weight_g: Number(pack.weight_g),
       price: Number(pack.price),
+      mrp: Number(pack.mrp) > Number(pack.price) ? Number(pack.mrp) : null,
     }));
-    if (ok) { setAddPackFor(null); setPack({ label: "", weight_g: 1000, price: "" }); }
+    if (ok) { setAddPackFor(null); setPack({ label: "", weight_g: 1000, price: "", mrp: "" }); }
   };
 
   // Group by category, keeping the order the API returned (sort_order).
@@ -123,7 +145,7 @@ export default function Products() {
 
             <table>
               <thead>
-                <tr><th>Product</th><th>Pack</th><th>Price</th><th>Pack</th><th>Product</th></tr>
+                <tr><th>Product</th><th>Pack</th><th>Selling price</th><th>Was (optional)</th><th>Pack</th><th>Product</th></tr>
               </thead>
               <tbody>
                 {items.map((p) => {
@@ -159,7 +181,7 @@ export default function Products() {
                   const rows = variants.length === 0 ? [(
                     <tr key={p.id}>
                       <td><b>{p.name}</b></td>
-                      <td colSpan={3} className="muted"><i>no packs — add one before it can be sold</i></td>
+                      <td colSpan={4} className="muted"><i>no packs — add one before it can be sold</i></td>
                       {productCell}
                     </tr>
                   )] : variants.map((v, i) => {
@@ -182,6 +204,26 @@ export default function Products() {
                               <button className="btn sm primary" disabled={saving} onClick={() => savePrice(v)}>
                                 Save
                               </button>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="row" style={{ gap: 6, alignItems: "center" }}>
+                            <input type="number" style={{ width: 96 }} placeholder="—"
+                              title="Shown struck through beside the price. Leave empty for no discount."
+                              value={mrpEdits[v.id] ?? (v.mrp ?? "")}
+                              onChange={(e) => stageMrp(v.id, e.target.value)} />
+                            {mrpEdits[v.id] !== undefined &&
+                             mrpEdits[v.id] !== String(v.mrp ?? "") && (
+                              <button className="btn sm primary" disabled={saving} onClick={() => saveMrp(v)}>
+                                Save
+                              </button>
+                            )}
+                            {/* Show the shop the same number the customer will see. */}
+                            {Number(v.mrp) > Number(v.price) && (
+                              <span className="muted nowrap" style={{ fontSize: 11 }}>
+                                {Math.round(((v.mrp - v.price) / v.mrp) * 100)}% off
+                              </span>
                             )}
                           </div>
                         </td>
@@ -209,7 +251,7 @@ export default function Products() {
                   if (addPackFor === p.id) {
                     rows.push(
                       <tr key={p.id + "-addpack"} className="addpack-row">
-                        <td colSpan={5}>
+                        <td colSpan={6}>
                           <div className="row" style={{ gap: 10, flexWrap: "wrap", padding: "4px 0" }}>
                             <span className="muted" style={{ fontSize: 12.5 }}>
                               New pack for <b>{p.name}</b>
@@ -220,6 +262,10 @@ export default function Products() {
                               onChange={(e) => setPack((c: Row) => ({ ...c, weight_g: e.target.value }))} />
                             <input type="number" style={{ width: 110 }} placeholder="₹ price" value={pack.price}
                               onChange={(e) => setPack((c: Row) => ({ ...c, price: e.target.value }))} />
+                            <input type="number" style={{ width: 130 }} placeholder="₹ was (optional)"
+                              title="Struck through beside the price. Leave empty for no discount."
+                              value={pack.mrp}
+                              onChange={(e) => setPack((c: Row) => ({ ...c, mrp: e.target.value }))} />
                             <button className="btn sm primary" disabled={saving} onClick={() => addPack(p.id)}>
                               {saving ? "Saving…" : "Add pack"}
                             </button>
@@ -257,7 +303,7 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
   const [f, setF] = useState<Row>({
     name: "", category: "", subcategory_id: "", unit: "500g", short_description: "", image_url: "",
   });
-  const [variants, setVariants] = useState<Row[]>([{ label: "500g", weight_g: 500, price: "" }]);
+  const [variants, setVariants] = useState<Row[]>([{ label: "500g", weight_g: 500, price: "", mrp: "" }]);
 
   useEffect(() => { adminApi.getSubcategories().then(setSubs).catch(() => setSubs([])); }, []);
 
@@ -289,6 +335,7 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
           label: v.label || `${v.weight_g}g`,
           weight_g: Number(v.weight_g),
           price: Number(v.price),
+          mrp: Number(v.mrp) > Number(v.price) ? Number(v.mrp) : null,
         })),
       });
       onAdded();
@@ -351,6 +398,10 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
           <div><label>Price ₹</label>
             <input type="number" style={{ width: 110 }} value={v.price}
               onChange={(e) => setVar(i, { price: e.target.value })} /></div>
+          <div><label>Was ₹ <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+            <input type="number" style={{ width: 110 }} value={v.mrp} placeholder="—"
+              title="Shown struck through beside the price. Leave empty for no discount."
+              onChange={(e) => setVar(i, { mrp: e.target.value })} /></div>
           {variants.length > 1 && (
             <button className="btn sm danger" style={{ alignSelf: "flex-end" }}
               onClick={() => setVariants((vs) => vs.filter((_, j) => j !== i))}>🗑</button>
@@ -359,7 +410,7 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
       ))}
 
       <button className="btn sm ghost"
-        onClick={() => setVariants((v) => [...v, { label: "", weight_g: 1000, price: "" }])}>
+        onClick={() => setVariants((v) => [...v, { label: "", weight_g: 1000, price: "", mrp: "" }])}>
         ＋ Add pack size
       </button>
 

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { auth } from "../lib/apiClient";
+import { Logo } from "../components/Logo";
 
 // Admin login screen. Shown whenever there is no valid session. On success the
 // auth store notifies and App swaps to the admin UI.
@@ -27,7 +28,8 @@ export default function Login() {
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
       <form className="panel" onSubmit={submit} style={{ width: 360, maxWidth: "100%" }}>
         <div className="brand" style={{ marginBottom: 16 }}>
-          <div className="mark">M</div>
+          {/* The login card is cream, so the dark mark. */}
+          <Logo height={40} />
           <div>
             <div className="name">Marrow<b> Fresh</b></div>
             <div className="tag">ADMIN</div>

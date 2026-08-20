@@ -1,5 +1,6 @@
 // =====================================================================
 //  MARROW FRESH — Customer app (App 3)  ·  storefront + login + ordering
+import { Logo } from "../components/Logo";
 //  Design ported from the existing website (marrow-bold.html).
 //  Orders placed here flow straight into Admin → Delivery (shared store).
 // =====================================================================
@@ -66,7 +67,7 @@ export default function CustomerApp() {
       <header className="chdr">
         <div className="wrap cnav">
           <div className="cbrand">
-            <div className="mark">M</div>
+            <Logo height={40} />
             <div className="name">Marrow<b>Fresh</b></div>
           </div>
           <div className="cnav-right">

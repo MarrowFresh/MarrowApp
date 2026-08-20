@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
+import { Logo } from "./components/Logo";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
@@ -28,7 +29,7 @@ function Sidebar() {
     <aside className={"sidebar" + (open ? " open" : "")}>
       <div className="side-top">
         <div className="brand">
-          <div className="mark">M</div>
+          <Logo onDark height={38} />
           <div>
             <div className="name">Marrow<b> Fresh</b></div>
             <div className="tag">ALWAYS FRESH · NEVER FROZEN</div>
