@@ -1,10 +1,10 @@
 // =====================================================================
 //  MARROW FRESH — Customer app (App 3)  ·  storefront + login + ordering
-import { Logo } from "../components/Logo";
 //  Design ported from the existing website (marrow-bold.html).
 //  Orders placed here flow straight into Admin → Delivery (shared store).
 // =====================================================================
 import { useMemo, useState } from "react";
+import { Logo } from "../components/Logo";
 import { useDB } from "../useStore";
 import { store } from "../lib/data";
 import { priceOrder } from "../lib/pricing";
@@ -67,8 +67,7 @@ export default function CustomerApp() {
       <header className="chdr">
         <div className="wrap cnav">
           <div className="cbrand">
-            <Logo height={40} />
-            <div className="name">Marrow<b>Fresh</b></div>
+            <Logo dark={false} size={38} />
           </div>
           <div className="cnav-right">
             {myOrders.length > 0 && (
@@ -186,7 +185,7 @@ export default function CustomerApp() {
         <div className="wrap">
           <div className="top">
             <div className="fb">
-              <div className="name">Marrow<b>Fresh</b></div>
+              <Logo dark size={40} />
               <p>Premium fresh meat, cut only after you order. Always fresh, never frozen — across KPHB, Hyderabad.</p>
             </div>
             <div className="fc">

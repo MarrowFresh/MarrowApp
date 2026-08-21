@@ -1,36 +1,25 @@
-/// The real Marrow Fresh mark, from the same files the website and the mobile
-/// app ship.
-///
-/// Every shell here used to draw its own brand: a letter "M" in a circle beside
-/// the words "Marrow Fresh" in Playfair. That is a placeholder, not a logo — it
-/// looked like the brand only by coincidence, and drifted a little more with
-/// every screen someone added. This is the one component that renders it, so
-/// there is nowhere left for a second version to appear.
-///
-/// `onDark` picks the light artwork. The sidebar and the delivery header are
-/// espresso; the login card and customer header are cream.
-export function Logo({
-  onDark = false,
-  height = 34,
-  lockup = false,
-}: {
-  onDark?: boolean;
-  height?: number;
-  lockup?: boolean;
-}) {
-  const src = lockup
-    ? onDark ? "/logo-lockup-light.png" : "/logo-lockup.png"
-    : onDark ? "/logo-mark-light.svg" : "/logo-mark.svg";
-
+// The same brand lockup the website ships — wings mark plus the MARROW / FRESH
+// wordmark, transparent PNG, from the identical files in public/.
+//
+// This deliberately mirrors MarrowFresh.Frontend/src/components/Logo.jsx rather
+// than inventing a variant: the admin, the delivery app and the storefront are
+// the same business, and a second treatment of the logo is how a brand starts
+// looking like two.
+//
+// dark=false → espresso artwork, for light grounds like the login card.
+// dark=true  → cream artwork, for dark grounds like the sidebar and the
+//              delivery header, where the espresso wordmark would disappear.
+//
+// The width/height attrs are the artwork's intrinsic size. They pin the aspect
+// ratio so nothing jumps while the image loads; height comes from the style.
+export function Logo({ size = 40, dark = true }: { size?: number; dark?: boolean }) {
   return (
     <img
-      src={src}
+      src={dark ? "/logo-lockup-light.png" : "/logo-lockup.png"}
       alt="Marrow Fresh"
-      height={height}
-      style={{ height, width: "auto", display: "block" }}
-      // The logo is decoration next to a heading that already says the name;
-      // loading it must never delay the page it sits on.
-      loading="eager"
+      width="620"
+      height="163"
+      style={{ height: size, width: "auto", display: "block" }}
       decoding="async"
     />
   );

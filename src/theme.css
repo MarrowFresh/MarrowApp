@@ -327,3 +327,10 @@ textarea {
 .rating-box .stars span{color:rgba(46,35,27,.22)}
 .rating-box b{font-size:13px}
 .rating-box p{margin:2px 0 0;font-size:14px;line-height:1.5;font-style:italic}
+
+/* The brand block now carries the lockup, which already contains the wordmark,
+   so it stacks rather than sitting beside typed-out text. */
+.brand.brand-stack { display: block; }
+.brand.brand-stack .tag { margin-top: 6px; }
+/* On a cream ground the gold tagline is too pale to read; use the muted ink. */
+.tag.tag-ink { color: var(--muted); }

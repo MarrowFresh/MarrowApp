@@ -27,13 +27,11 @@ export default function Login() {
   return (
     <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
       <form className="panel" onSubmit={submit} style={{ width: 360, maxWidth: "100%" }}>
-        <div className="brand" style={{ marginBottom: 16 }}>
-          {/* The login card is cream, so the dark mark. */}
-          <Logo height={40} />
-          <div>
-            <div className="name">Marrow<b> Fresh</b></div>
-            <div className="tag">ADMIN</div>
-          </div>
+        {/* Cream card, so the espresso artwork — same call the website's
+            header makes. */}
+        <div className="brand brand-stack" style={{ marginBottom: 18 }}>
+          <Logo dark={false} size={38} />
+          <div className="tag tag-ink">ADMIN</div>
         </div>
 
         <h1 style={{ fontSize: 20, margin: "0 0 4px" }}>Sign in</h1>

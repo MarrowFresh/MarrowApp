@@ -1,11 +1,11 @@
 // =====================================================================
 //  MARROW FRESH — Delivery app (App 2)  ·  mobile PWA view
-import { Logo } from "../components/Logo";
 //  A rider signs in with their phone + 6-digit PIN and sees only the
 //  orders assigned to them. They can leave a remark and move an order
 //  to "Out for delivery" and then "Delivered".
 // =====================================================================
 import { useCallback, useEffect, useState } from "react";
+import { Logo } from "../components/Logo";
 import {
   riderAuth, useRiderAuth, fetchMyOrders, updateMyOrder,
   type RiderOrder,
@@ -46,8 +46,7 @@ function Login() {
   return (
     <div className="dframe">
       <form className="dlogin" onSubmit={submit}>
-        <Logo onDark height={54} />
-        <div className="dbrand big">Marrow<b>Fresh</b></div>
+        <Logo dark size={46} />
         <div className="dsub">Delivery partner login</div>
 
         <label className="dlabel">Phone number</label>
@@ -109,14 +108,11 @@ function MyOrders() {
   return (
     <div className="dframe">
       <header className="dhead">
-        {/* .dhead is space-between, so the logo and the wordmark have to travel
+        {/* .dhead is space-between, so the lockup and the rider line travel
             together or the header spreads into three separate islands. */}
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-          <Logo onDark height={32} />
-          <div>
-            <div className="dbrand">Marrow<b>Fresh</b></div>
-            <div className="dsub">Delivery · {riderAuth.name()}</div>
-          </div>
+          <Logo dark size={30} />
+          <div className="dsub">Delivery · {riderAuth.name()}</div>
         </div>
         <button className="dlogout" onClick={() => riderAuth.logout()}>Logout</button>
       </header>

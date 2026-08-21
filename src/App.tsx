@@ -28,12 +28,11 @@ function Sidebar() {
   return (
     <aside className={"sidebar" + (open ? " open" : "")}>
       <div className="side-top">
-        <div className="brand">
-          <Logo onDark height={38} />
-          <div>
-            <div className="name">Marrow<b> Fresh</b></div>
-            <div className="tag">ALWAYS FRESH · NEVER FROZEN</div>
-          </div>
+        {/* The lockup already contains the wordmark, so the typed-out name
+            beside it would be the brand said twice. Tagline stays. */}
+        <div className="brand brand-stack">
+          <Logo dark size={34} />
+          <div className="tag">ALWAYS FRESH · NEVER FROZEN</div>
         </div>
         <button className="sidebar-toggle" aria-label="Toggle menu" onClick={() => setOpen((o) => !o)}>☰</button>
       </div>
