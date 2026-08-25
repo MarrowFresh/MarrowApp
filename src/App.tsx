@@ -6,6 +6,7 @@ import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import NewOrder from "./pages/NewOrder";
 import Products from "./pages/Products";
+import ProductEdit from "./pages/ProductEdit";
 import Coupons from "./pages/Coupons";
 import Rules from "./pages/Rules";
 import Banners from "./pages/Banners";
@@ -73,6 +74,7 @@ function AdminLayout() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/products/:id" element={<ProductEdit />} />
           <Route path="/coupons" element={<Coupons />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/banners" element={<Banners />} />

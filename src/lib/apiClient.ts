@@ -199,6 +199,7 @@ export const adminApi = {
   deactivateRule: (id: string) => send(`admin/rules/${encodeURIComponent(id)}`, "DELETE"),
 
   getProducts: () => getJson<any[]>("admin/products"),
+  getProduct: (id: string) => getJson<any>(`admin/products/${encodeURIComponent(id)}`),
   getSubcategories: () => getJson<any[]>("admin/subcategories"),
   createProduct: (p: Record<string, unknown>) => send("admin/products", "POST", p),
   addVariant: (productId: string, v: Record<string, unknown>) =>

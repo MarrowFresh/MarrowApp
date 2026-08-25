@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { adminApi } from "../lib/apiClient";
 import { useResource } from "../lib/useResource";
 
@@ -18,6 +19,7 @@ export default function Products() {
   const { data: products, loading, error, saving, mutate, refresh } =
     useResource<Product[]>(adminApi.getProducts, []);
 
+  const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
 
   // Price edits are staged per variant so a half-typed number is never saved.
@@ -163,6 +165,13 @@ export default function Products() {
                         <button className="btn sm ghost" disabled={saving}
                           onClick={() => setAddPackFor(addPackFor === p.id ? null : p.id)}>
                           ＋ Pack
+                        </button>
+                        {/* Rename is the quick path; Edit is everything else —
+                            description, photo, what the customer really gets. */}
+                        <button className="btn sm ghost" disabled={saving}
+                          onClick={() => navigate(`/products/${p.id}`)}
+                          title="Description, photo, cut weights, badges">
+                          ✎ Edit
                         </button>
                         <button className="btn sm ghost" disabled={saving}
                           onClick={() => renameProduct(p)} title="Change the name customers see">
