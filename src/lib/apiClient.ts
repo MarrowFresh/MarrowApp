@@ -211,6 +211,9 @@ export const adminApi = {
   updateVariant: (id: string, v: Record<string, unknown>) =>
     send(`admin/variants/${encodeURIComponent(id)}`, "PATCH", v),
 
+  resendReceipt: (id: string) =>
+    send(`admin/orders/${encodeURIComponent(id)}/receipt`, "POST"),
+
   getContacts: () => getJson<any>("admin/contacts"),
 
   getBanners: () => getJson<any[]>("admin/banners"),

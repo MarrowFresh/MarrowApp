@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { adminApi } from "../lib/apiClient";
 import {
   fetchOrderDetail, patchOrderStatus, fetchStaff, patchOrderDelivery,
   type OrderDetail, type StaffMember,
@@ -20,6 +21,23 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const [sending, setSending] = useState(false);
+  const [receiptSent, setReceiptSent] = useState(false);
+
+  const resendReceipt = async () => {
+    setSending(true);
+    try {
+      await adminApi.resendReceipt(id!);
+      setReceiptSent(true);
+      // Back to "Send receipt" shortly, so a second send is obviously possible.
+      setTimeout(() => setReceiptSent(false), 4000);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not send the receipt.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   // Delivery staff for the assign dropdown (same source as the Orders screen).
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -149,7 +167,19 @@ export default function OrderDetail() {
               {busy ? "Working…" : nextStatus === "Out for delivery" ? "🛵 Out for delivery" : `→ ${nextStatus}`}
             </button>
           ) : order.status === "Delivered" ? (
-            <span className="free">✓ Delivered</span>
+            <div className="row" style={{ gap: 10, alignItems: "center" }}>
+              <span className="free">✓ Delivered</span>
+              {/* The receipt goes out automatically on delivery. This is for when
+                  that message misses — a phone that was off, a cleared chat —
+                  and the customer says they never got a bill. */}
+              <button className="btn sm" disabled={sending} onClick={resendReceipt}
+                title="Send the receipt link to the customer on WhatsApp again">
+                {sending ? "Sending…" : receiptSent ? "✓ Sent" : "🧾 Send receipt"}
+              </button>
+              <a className="btn sm ghost" href={`/receipt/${order.id}`} target="_blank" rel="noreferrer">
+                View
+              </a>
+            </div>
           ) : null}
         </div>
       </div>
