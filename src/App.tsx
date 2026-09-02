@@ -7,6 +7,7 @@ import OrderDetail from "./pages/OrderDetail";
 import NewOrder from "./pages/NewOrder";
 import Products from "./pages/Products";
 import ProductEdit from "./pages/ProductEdit";
+import Reviews from "./pages/Reviews";
 import Coupons from "./pages/Coupons";
 import Rules from "./pages/Rules";
 import Banners from "./pages/Banners";
@@ -42,6 +43,7 @@ function Sidebar() {
         <NavLink to="/new" className={link}>➕ New Order</NavLink>
         <NavLink to="/orders" className={link}>🧾 Orders</NavLink>
         <NavLink to="/products" className={link}>🥩 Products</NavLink>
+        <NavLink to="/reviews" className={link}>⭐ Reviews</NavLink>
         <NavLink to="/coupons" className={link}>🎟️ Coupons</NavLink>
         <NavLink to="/rules" className={link}>📐 Rules</NavLink>
         <NavLink to="/banners" className={link}>🖼️ Banners</NavLink>
@@ -75,6 +77,7 @@ function AdminLayout() {
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductEdit />} />
+          <Route path="/reviews" element={<Reviews />} />
           <Route path="/coupons" element={<Coupons />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/banners" element={<Banners />} />

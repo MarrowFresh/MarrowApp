@@ -408,3 +408,28 @@ textarea {
 .pe-wa { background: #0b141a; border-radius: 10px; padding: 11px 12px; }
 .pe-wa .t { color: #e9edef; font-size: 13px; font-weight: 500; }
 .pe-wa .d { color: #8696a0; font-size: 11.5px; margin-top: 2px; line-height: 1.4; }
+
+/* ── Reviews ────────────────────────────────────────────────────────────────
+   The average and the spread first, then the comments. A 2 with something
+   written on it is the row worth acting on, so low scores carry a red rail
+   rather than sitting anonymously in date order. */
+.rv-summary { display: flex; gap: 30px; align-items: center; flex-wrap: wrap; }
+.rv-avg { text-align: center; min-width: 110px; }
+.rv-avg .n { font-family: "Playfair Display", serif; font-size: 42px; line-height: 1; font-weight: 700; }
+.rv-avg .s { color: var(--saffron); font-size: 15px; letter-spacing: 2px; margin: 4px 0 2px; }
+.rv-bars { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 5px; }
+.rv-bar { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+.rv-bar .lbl { width: 24px; color: var(--muted); }
+.rv-bar .track { flex: 1; height: 7px; background: var(--bone); border-radius: 20px; overflow: hidden; }
+.rv-bar .fill { display: block; height: 100%; background: var(--saffron); border-radius: 20px; }
+.rv-bar .fill.low { background: var(--bad); }
+.rv-bar .cnt { width: 22px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.rv-list { display: flex; flex-direction: column; gap: 12px; }
+.rv-item { padding: 13px 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--cream); }
+.rv-item.low { border-left: 3px solid var(--bad); }
+.rv-top { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; font-size: 13.5px; }
+.rv-stars { color: var(--saffron); letter-spacing: 1.5px; }
+.rv-stars.low { color: var(--bad); }
+.rv-when { margin-left: auto; font-size: 12px; }
+.rv-text { margin: 7px 0 10px; font-size: 13.5px; line-height: 1.55; }

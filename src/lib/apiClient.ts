@@ -214,6 +214,8 @@ export const adminApi = {
   resendReceipt: (id: string) =>
     send(`admin/orders/${encodeURIComponent(id)}/receipt`, "POST"),
 
+  getReviews: () => getJson<any[]>("admin/reviews"),
+
   getContacts: () => getJson<any>("admin/contacts"),
 
   getBanners: () => getJson<any[]>("admin/banners"),
