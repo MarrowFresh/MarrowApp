@@ -216,6 +216,12 @@ export const adminApi = {
 
   getReviews: () => getJson<any[]>("admin/reviews"),
 
+  getBroadcastAudience: () => getJson<any>("admin/broadcast/audience"),
+  getBroadcastTemplates: () => getJson<any>("admin/broadcast/templates"),
+  getBroadcasts: () => getJson<any[]>("admin/broadcast"),
+  sendBroadcast: async (b: Record<string, unknown>) =>
+    (await send("admin/broadcast", "POST", b)).json(),
+
   getContacts: () => getJson<any>("admin/contacts"),
 
   getBanners: () => getJson<any[]>("admin/banners"),

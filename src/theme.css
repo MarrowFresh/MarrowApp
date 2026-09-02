@@ -433,3 +433,66 @@ textarea {
 .rv-stars.low { color: var(--bad); }
 .rv-when { margin-left: auto; font-size: 12px; }
 .rv-text { margin: 7px 0 10px; font-size: 13.5px; line-height: 1.55; }
+
+/* ── Broadcast ──────────────────────────────────────────────────────────────
+   Compose on the left, the WhatsApp bubble on the right. The preview is the
+   point: a template with {{1}} in it tells you nothing about what arrives. */
+.bc-warn { background: #fdf4e4; border-left: 3px solid var(--saffron); font-size: 13px; }
+.bc-cols { display: grid; grid-template-columns: 1fr 320px; gap: 18px; align-items: start; }
+@media (max-width: 950px) { .bc-cols { grid-template-columns: 1fr; } }
+
+.bc-aud { display: flex; flex-direction: column; gap: 9px; }
+.bc-opt, .bc-tpl {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; width: 100%;
+  border: 1.5px solid var(--line); border-radius: 11px; cursor: pointer;
+  background: var(--cream); font: inherit; text-align: left; color: var(--ink);
+}
+.bc-tpl { margin-bottom: 8px; }
+.bc-opt[aria-checked="true"], .bc-tpl[aria-checked="true"] { border-color: var(--terracotta); }
+.bc-opt .dot, .bc-tpl .dot {
+  width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line);
+  flex: none; position: relative;
+}
+.bc-opt[aria-checked="true"] .dot, .bc-tpl[aria-checked="true"] .dot { border-color: var(--terracotta); }
+.bc-opt[aria-checked="true"] .dot::after, .bc-tpl[aria-checked="true"] .dot::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--terracotta);
+}
+.bc-opt .t, .bc-tpl .t { flex: 1; }
+.bc-opt .t b, .bc-tpl .t b { display: block; font-size: 13.5px; }
+.bc-opt .t span, .bc-tpl .t span { font-size: 11.5px; color: var(--muted); }
+.bc-opt .n { font-family: "Playfair Display", serif; font-size: 22px; font-weight: 700;
+  font-variant-numeric: tabular-nums; }
+.bc-tpl .st { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  background: rgba(46,125,79,.14); color: var(--ok); }
+
+.bc-pick { margin-top: 12px; border: 1px solid var(--line); border-radius: 11px;
+  max-height: 210px; overflow: auto; }
+.bc-pick .row { display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-bottom: 1px solid var(--line); font-size: 13px; cursor: pointer; }
+.bc-pick .row:last-child { border-bottom: 0; }
+.bc-pick .tag { margin-left: auto; font-size: 10px; padding: 2px 7px; border-radius: 20px;
+  background: var(--bone); color: var(--muted); font-weight: 600; }
+.bc-pick .tag.c { background: rgba(46,125,79,.14); color: var(--ok); }
+
+.bc-hint { font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+.bc-grid { display: grid; gap: 14px; }
+.bc-cols label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .4px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.bc-cols input { width: 100%; }
+
+.bc-rail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 950px) { .bc-rail { position: static; } }
+.bc-railh { font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted); font-weight: 600; }
+.bc-phone { background: #0b141a; border-radius: 16px; padding: 14px 12px 18px; }
+.bc-bubble { background: #005c4b; color: #e9edef; border-radius: 9px 9px 9px 2px;
+  overflow: hidden; padding-bottom: 7px; }
+.bc-bubble .img { aspect-ratio: 1.91/1; background: #0e2a24; display: grid; place-items: center;
+  color: #5f8079; font-size: 12px; }
+.bc-bubble .img img { width: 100%; height: 100%; object-fit: cover; }
+.bc-bubble .txt { padding: 8px 10px 0; font-size: 13.5px; line-height: 1.45; word-break: break-word; }
+.bc-bubble .time { text-align: right; padding: 2px 10px 0; font-size: 10.5px; color: #8fb3ab; }
+
+.bc-cost { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted);
+  padding: 11px 13px; background: var(--bone); border-radius: 10px; }
+.bc-cost b { color: var(--ink); }
