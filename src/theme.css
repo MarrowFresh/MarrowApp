@@ -504,3 +504,37 @@ textarea {
   background: var(--gold); color: var(--espresso);
   font-size: 9px; font-weight: 700; letter-spacing: .4px; vertical-align: 2px;
 }
+
+/* ── Product status ─────────────────────────────────────────────────────────
+   One question — is this on sale, finished today, sourced to order, or not in
+   the shop at all — with one answer. Previously three switches on two screens,
+   free to contradict each other. */
+.st-list { display: flex; flex-direction: column; gap: 8px; }
+.st-opt {
+  display: flex; align-items: flex-start; gap: 12px; padding: 11px 13px; width: 100%;
+  border: 1.5px solid var(--line); border-radius: 11px; cursor: pointer;
+  background: var(--cream); font: inherit; text-align: left; color: var(--ink);
+}
+.st-opt[aria-checked="true"] { border-color: var(--terracotta); }
+.st-opt .dot {
+  width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line);
+  flex: none; position: relative; margin-top: 2px;
+}
+.st-opt[aria-checked="true"] .dot { border-color: var(--terracotta); }
+.st-opt[aria-checked="true"] .dot::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--terracotta);
+}
+.st-opt .t b { display: block; font-size: 13.5px; }
+.st-opt .t span { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+/* The table's compact version. Colour carries the state so a long list can be
+   scanned without reading every row. */
+.st-sel {
+  font: inherit; font-size: 12px; font-weight: 600; padding: 5px 8px;
+  border-radius: 20px; border: 1.4px solid var(--line); background: var(--cream);
+  color: var(--ink); cursor: pointer;
+}
+.st-sel.st-available { border-color: var(--ok); color: var(--ok); }
+.st-sel.st-soldout   { border-color: var(--bad); color: var(--bad); }
+.st-sel.st-preorder  { border-color: var(--gold); color: #8a6d2f; }
+.st-sel.st-hidden    { color: var(--muted); }

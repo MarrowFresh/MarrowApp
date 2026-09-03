@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminApi } from "../lib/apiClient";
 import { useResource } from "../lib/useResource";
+import { STATUS, statusOf, applyStatus, type ProductStatus } from "../lib/productStatus";
 
 // Products and their pack sizes, straight from the database — the same rows the
 // website and the WhatsApp bot read. Editing a price here changes what customers
@@ -158,10 +159,17 @@ export default function Products() {
                   const productCell = (
                     <td rowSpan={Math.max(1, variants.length)}>
                       <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                        <button className={"btn sm " + (p.available ? "accent" : "ghost")}
-                          disabled={saving} onClick={() => toggleProduct(p)}>
-                          {p.available ? "On sale" : "Hidden"}
-                        </button>
+                        {/* One control, four answers. Previously On sale/Hidden
+                            sat here while pre-order lived on another screen and
+                            sold out on each pack — three switches for one
+                            question, free to contradict each other. */}
+                        <select className={"st-sel st-" + statusOf(p)} disabled={saving}
+                          value={statusOf(p)}
+                          onChange={(e) => mutate(async () => {
+                            await applyStatus(p, e.target.value as ProductStatus);
+                          })}>
+                          {STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                        </select>
                         <button className="btn sm ghost" disabled={saving}
                           onClick={() => setAddPackFor(addPackFor === p.id ? null : p.id)}>
                           ＋ Pack
@@ -201,7 +209,6 @@ export default function Products() {
                         {i === 0 && (
                           <td rowSpan={variants.length}>
                             <b>{p.name}</b>
-                            {p.preorder && <span className="po-pill">PRE-ORDER</span>}
                             <div className="muted" style={{ fontSize: 11 }}>from {inr(p.price)}</div>
                           </td>
                         )}
@@ -341,7 +348,8 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
         unit: f.unit || "500g",
         short_description: f.short_description || null,
         image_url: f.image_url || null,
-        preorder: !!f.preorder,
+        available: (f.status || "available") !== "hidden",
+        preorder: f.status === "preorder",
         preorder_note: f.preorder_note || null,
         variants: variants.map((v) => ({
           label: v.label || `${v.weight_g}g`,
@@ -394,16 +402,17 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
             onChange={(e) => set({ image_url: e.target.value })} /></div>
       </div>
 
-      <h3 style={{ margin: "20px 0 4px", fontSize: 15 }}>Pre-order</h3>
-      <button type="button" className={"btn sm " + (f.preorder ? "accent" : "ghost")}
-        style={{ marginTop: 8 }} onClick={() => set({ preorder: !f.preorder })}>
-        {f.preorder ? "✓ This is a pre-order item" : "Mark as pre-order"}
-      </button>
-      <p className="muted" style={{ fontSize: 12, margin: "8px 0 0", maxWidth: 520 }}>
-        {f.preorder
-          ? "Never in stock — we source it when someone asks. Listed last with a Pre-order label instead of Sold out, and tapping it opens WhatsApp rather than adding to a basket."
-          : "Stocked normally. Customers add it to the basket, and each pack gets its own Sold out switch."}
-      </p>
+      <h3 style={{ margin: "20px 0 4px", fontSize: 15 }}>Status</h3>
+      <div className="st-list" role="radiogroup" aria-label="Product status" style={{ maxWidth: 560 }}>
+        {STATUS.map((st) => (
+          <button key={st.id} type="button" role="radio" className="st-opt"
+            aria-checked={(f.status || "available") === st.id}
+            onClick={() => set({ status: st.id })}>
+            <span className="dot" />
+            <span className="t"><b>{st.label}</b><span>{st.hint}</span></span>
+          </button>
+        ))}
+      </div>
       {f.preorder && (
         <div style={{ marginTop: 12, maxWidth: 420 }}>
           <label>What the customer is told</label>

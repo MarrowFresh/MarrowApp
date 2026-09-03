@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../lib/apiClient";
+import { STATUS, statusOf, applyStatus, type ProductStatus } from "../lib/productStatus";
 
 // Everything about one product, on one screen.
 //
@@ -48,6 +49,7 @@ export default function ProductEdit() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [status, setStatus] = useState<ProductStatus>("available");
 
   useEffect(() => {
     let alive = true;
@@ -59,6 +61,7 @@ export default function ProductEdit() {
           .sort((a: Row, b: Row) => (a.sort_order || 0) - (b.sort_order || 0));
         setP(row);
         setVariants(vs);
+        setStatus(statusOf(row));
         setSubs(s as Row[]);
       })
       .catch((e) => alive && setErr(e?.message || "Could not load this product"))
@@ -85,6 +88,8 @@ export default function ProductEdit() {
   const save = async () => {
     setSaving(true); setErr(null);
     try {
+      await applyStatus({ ...p, product_variants: variants }, status);
+
       await adminApi.updateProduct(id, {
         name: (p.name || "").trim(),
         category: p.category,
@@ -94,7 +99,6 @@ export default function ProductEdit() {
         description: p.description || null,
         image_url: p.image_url || null,
         badges: p.badges || [],
-        preorder: !!p.preorder,
         preorder_note: p.preorder_note || null,
         sold_by: soldBy,
         // weight_basis is what older readers still look at, so keep the two in
@@ -106,7 +110,6 @@ export default function ProductEdit() {
         today_special: !!p.today_special,
         seo_title: p.seo_title || null,
         seo_description: p.seo_description || null,
-        available: p.available !== false,
         sort_order: num(p.sort_order) ?? 99,
       });
 
@@ -119,7 +122,9 @@ export default function ProductEdit() {
           net_max_g: num(v.net_max_g),
           price: Number(v.price),
           mrp: num(v.mrp) && Number(v.mrp) > Number(v.price) ? Number(v.mrp) : null,
-          available: v.available !== false,
+          // "Sold out" at product level means all of them, so it overrides the
+          // per-pack switches rather than letting the two disagree.
+          available: status === "soldout" ? false : v.available !== false,
         });
       }
       setSaved(true);
@@ -189,20 +194,27 @@ export default function ProductEdit() {
           </section>
 
           <section className="panel">
-            {/* Deliberately NOT called "availability". The product already has an
-                On sale / Hidden switch and each pack has its own Sold out button —
-                a third thing calling itself availability is how they get confused.
-                This is a property of the product: we source it, we never stock it. */}
-            <div className="strip"><h2>Pre-order</h2><span className="rule" /></div>
-            <button type="button" className={"btn sm " + (p.preorder ? "accent" : "ghost")}
-              onClick={() => set({ preorder: !p.preorder })}>
-              {p.preorder ? "✓ This is a pre-order item" : "Mark as pre-order"}
-            </button>
-            <div className="pe-hint">
-              {p.preorder
-                ? "Never in stock — we source it when someone asks. Listed at the end of every list with a Pre-order label instead of Sold out, and tapping it opens WhatsApp rather than adding to a basket."
-                : "Stocked normally. Customers add it to the basket, and each pack has its own Sold out switch for when it runs out."}
+            {/* One question, four answers. Three separate switches could
+                contradict each other — a product could be Hidden AND pre-order,
+                which is two answers at once. */}
+            <div className="strip"><h2>Status</h2><span className="rule" /></div>
+            <div className="st-list" role="radiogroup" aria-label="Product status">
+              {STATUS.map((s) => (
+                <button key={s.id} type="button" role="radio" className="st-opt"
+                  aria-checked={status === s.id}
+                  onClick={() => { setStatus(s.id); setSaved(false); }}>
+                  <span className="dot" />
+                  <span className="t"><b>{s.label}</b><span>{s.hint}</span></span>
+                </button>
+              ))}
             </div>
+            {status === "soldout" && (
+              <div className="pe-hint">
+                Saving this switches <b>every</b> pack to sold out. To mark just one
+                size — the 250g but not the 500g — leave this on <b>Available now</b>
+                and use the Sold out button on that pack below.
+              </div>
+            )}
             {p.preorder && (
               <div style={{ marginTop: 14 }}>
                 <label>What the customer is told</label>
@@ -352,17 +364,19 @@ export default function ProductEdit() {
             <div className="strip"><h2>Where it appears</h2><span className="rule" /></div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               {([
-                ["available", "On sale"], ["bestseller", "Bestseller"],
-                ["recommended", "Recommended"], ["today_special", "Today’s special"],
+                ["bestseller", "Bestseller"],
+                ["recommended", "Recommended"],
+                ["today_special", "Today’s special"],
               ] as const).map(([k, lbl]) => (
-                <button key={k} className={"btn sm " + (p[k] !== false && p[k] ? "accent" : (k === "available" && p[k] !== false ? "accent" : "ghost"))}
-                  onClick={() => set({ [k]: k === "available" ? p[k] === false : !p[k] })}>
+                <button key={k} className={"btn sm " + (p[k] ? "accent" : "ghost")}
+                  onClick={() => set({ [k]: !p[k] })}>
                   {lbl}
                 </button>
               ))}
             </div>
             <div className="pe-hint" style={{ marginTop: 10 }}>
-              Turning <b>On sale</b> off hides it everywhere at once. Past orders keep their own copy.
+              Where the product is promoted. Whether it is <i>sold</i> at all is the Status
+              above — these are just badges.
             </div>
             <div style={{ marginTop: 14, maxWidth: 160 }}>
               <label>Position in list</label>
