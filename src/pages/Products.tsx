@@ -201,6 +201,7 @@ export default function Products() {
                         {i === 0 && (
                           <td rowSpan={variants.length}>
                             <b>{p.name}</b>
+                            {p.preorder && <span className="po-pill">PRE-ORDER</span>}
                             <div className="muted" style={{ fontSize: 11 }}>from {inr(p.price)}</div>
                           </td>
                         )}
@@ -340,6 +341,8 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
         unit: f.unit || "500g",
         short_description: f.short_description || null,
         image_url: f.image_url || null,
+        preorder: !!f.preorder,
+        preorder_note: f.preorder_note || null,
         variants: variants.map((v) => ({
           label: v.label || `${v.weight_g}g`,
           weight_g: Number(v.weight_g),
@@ -390,6 +393,25 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
           <input style={{ width: "100%" }} value={f.image_url} placeholder="https://…/photo.jpg"
             onChange={(e) => set({ image_url: e.target.value })} /></div>
       </div>
+
+      <h3 style={{ margin: "20px 0 4px", fontSize: 15 }}>Availability</h3>
+      <div className="pe-seg" style={{ marginTop: 8 }}>
+        <button type="button" aria-pressed={!f.preorder} onClick={() => set({ preorder: false })}>In stock</button>
+        <button type="button" aria-pressed={!!f.preorder} onClick={() => set({ preorder: true })}>Pre-order</button>
+      </div>
+      <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>
+        {f.preorder
+          ? "Listed last with a Pre-order label and no Add button — tapping it opens WhatsApp instead."
+          : "Sold from stock. Customers add it to the basket and check out as normal."}
+      </p>
+      {f.preorder && (
+        <div style={{ marginTop: 12, maxWidth: 420 }}>
+          <label>What the customer is told</label>
+          <input style={{ width: "100%" }} value={f.preorder_note || ""}
+            placeholder="We source these to order rather than keeping them on ice."
+            onChange={(e) => set({ preorder_note: e.target.value })} />
+        </div>
+      )}
 
       <h3 style={{ margin: "20px 0 4px", fontSize: 15 }}>Pack sizes</h3>
       <p className="muted" style={{ fontSize: 12, marginBottom: 10 }}>

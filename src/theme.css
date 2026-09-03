@@ -496,3 +496,11 @@ textarea {
 .bc-cost { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted);
   padding: 11px 13px; background: var(--bone); border-radius: 10px; }
 .bc-cost b { color: var(--ink); }
+
+/* Pre-order: sourced to order rather than held in stock. Gold, like the
+   BESTSELLER badge — it marks something special, not something broken. */
+.po-pill {
+  display: inline-block; margin-left: 7px; padding: 1px 7px; border-radius: 20px;
+  background: var(--gold); color: var(--espresso);
+  font-size: 9px; font-weight: 700; letter-spacing: .4px; vertical-align: 2px;
+}

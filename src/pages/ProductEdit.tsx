@@ -94,6 +94,8 @@ export default function ProductEdit() {
         description: p.description || null,
         image_url: p.image_url || null,
         badges: p.badges || [],
+        preorder: !!p.preorder,
+        preorder_note: p.preorder_note || null,
         sold_by: soldBy,
         // weight_basis is what older readers still look at, so keep the two in
         // step rather than leaving a stale value behind.
@@ -184,6 +186,35 @@ export default function ProductEdit() {
                 </div>
               </div>
             </div>
+          </section>
+
+          <section className="panel">
+            <div className="strip"><h2>Availability</h2><span className="rule" /></div>
+            <div className="pe-seg">
+              <button type="button" aria-pressed={!p.preorder} onClick={() => set({ preorder: false })}>
+                In stock
+              </button>
+              <button type="button" aria-pressed={!!p.preorder} onClick={() => set({ preorder: true })}>
+                Pre-order
+              </button>
+            </div>
+            <div className="pe-hint">
+              {p.preorder
+                ? "Listed at the end of every list with a Pre-order label and no Add button. Tapping it opens WhatsApp instead — so it never joins a basket, and there is no mixed order to sort out."
+                : "Sold from what we have today. Customers add it to the basket and check out as normal."}
+            </div>
+            {p.preorder && (
+              <div style={{ marginTop: 14 }}>
+                <label>What the customer is told</label>
+                <input value={p.preorder_note || ""}
+                  placeholder="We source these to order rather than keeping them on ice."
+                  onChange={(e) => set({ preorder_note: e.target.value })} />
+                <div className="pe-hint">
+                  Shown under the Pre-order heading on the website, and in the bot's reply.
+                  Leave it empty for the default.
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="panel">
