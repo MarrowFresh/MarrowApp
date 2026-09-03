@@ -394,15 +394,15 @@ function AddProduct({ onAdded, onCancel }: { onAdded: () => void; onCancel: () =
             onChange={(e) => set({ image_url: e.target.value })} /></div>
       </div>
 
-      <h3 style={{ margin: "20px 0 4px", fontSize: 15 }}>Availability</h3>
-      <div className="pe-seg" style={{ marginTop: 8 }}>
-        <button type="button" aria-pressed={!f.preorder} onClick={() => set({ preorder: false })}>In stock</button>
-        <button type="button" aria-pressed={!!f.preorder} onClick={() => set({ preorder: true })}>Pre-order</button>
-      </div>
-      <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>
+      <h3 style={{ margin: "20px 0 4px", fontSize: 15 }}>Pre-order</h3>
+      <button type="button" className={"btn sm " + (f.preorder ? "accent" : "ghost")}
+        style={{ marginTop: 8 }} onClick={() => set({ preorder: !f.preorder })}>
+        {f.preorder ? "✓ This is a pre-order item" : "Mark as pre-order"}
+      </button>
+      <p className="muted" style={{ fontSize: 12, margin: "8px 0 0", maxWidth: 520 }}>
         {f.preorder
-          ? "Listed last with a Pre-order label and no Add button — tapping it opens WhatsApp instead."
-          : "Sold from stock. Customers add it to the basket and check out as normal."}
+          ? "Never in stock — we source it when someone asks. Listed last with a Pre-order label instead of Sold out, and tapping it opens WhatsApp rather than adding to a basket."
+          : "Stocked normally. Customers add it to the basket, and each pack gets its own Sold out switch."}
       </p>
       {f.preorder && (
         <div style={{ marginTop: 12, maxWidth: 420 }}>

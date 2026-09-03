@@ -189,19 +189,19 @@ export default function ProductEdit() {
           </section>
 
           <section className="panel">
-            <div className="strip"><h2>Availability</h2><span className="rule" /></div>
-            <div className="pe-seg">
-              <button type="button" aria-pressed={!p.preorder} onClick={() => set({ preorder: false })}>
-                In stock
-              </button>
-              <button type="button" aria-pressed={!!p.preorder} onClick={() => set({ preorder: true })}>
-                Pre-order
-              </button>
-            </div>
+            {/* Deliberately NOT called "availability". The product already has an
+                On sale / Hidden switch and each pack has its own Sold out button —
+                a third thing calling itself availability is how they get confused.
+                This is a property of the product: we source it, we never stock it. */}
+            <div className="strip"><h2>Pre-order</h2><span className="rule" /></div>
+            <button type="button" className={"btn sm " + (p.preorder ? "accent" : "ghost")}
+              onClick={() => set({ preorder: !p.preorder })}>
+              {p.preorder ? "✓ This is a pre-order item" : "Mark as pre-order"}
+            </button>
             <div className="pe-hint">
               {p.preorder
-                ? "Listed at the end of every list with a Pre-order label and no Add button. Tapping it opens WhatsApp instead — so it never joins a basket, and there is no mixed order to sort out."
-                : "Sold from what we have today. Customers add it to the basket and check out as normal."}
+                ? "Never in stock — we source it when someone asks. Listed at the end of every list with a Pre-order label instead of Sold out, and tapping it opens WhatsApp rather than adding to a basket."
+                : "Stocked normally. Customers add it to the basket, and each pack has its own Sold out switch for when it runs out."}
             </div>
             {p.preorder && (
               <div style={{ marginTop: 14 }}>
