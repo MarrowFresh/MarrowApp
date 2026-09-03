@@ -70,9 +70,21 @@ export async function applyStatus(
   if (status === "soldout" || status === "available") {
     const wanted = status === "available";
     for (const v of variants) {
+      // A hidden pack is withdrawn from sale — a size we no longer offer. Putting
+      // the product back on sale must not quietly bring it back.
+      if (v.hidden === true) continue;
       if (v.available !== wanted) {
         await adminApi.updateVariant(v.id, { available: wanted });
       }
     }
   }
+}
+
+/// A pack has the same three answers a product does, minus pre-order — that is
+/// a property of the whole product, not of one size of it.
+export type PackStatus = "available" | "soldout" | "hidden";
+
+export function packStatus(v: Record<string, any>): PackStatus {
+  if (v.hidden === true) return "hidden";
+  return v.available === false ? "soldout" : "available";
 }

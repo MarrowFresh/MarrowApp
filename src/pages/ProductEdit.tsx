@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../lib/apiClient";
-import { STATUS, statusOf, applyStatus, type ProductStatus } from "../lib/productStatus";
+import { STATUS, statusOf, applyStatus, packStatus, type ProductStatus } from "../lib/productStatus";
 
 // Everything about one product, on one screen.
 //
@@ -125,6 +125,7 @@ export default function ProductEdit() {
           // "Sold out" at product level means all of them, so it overrides the
           // per-pack switches rather than letting the two disagree.
           available: status === "soldout" ? false : v.available !== false,
+          hidden: v.hidden === true,
         });
       }
       setSaved(true);
@@ -139,7 +140,8 @@ export default function ProductEdit() {
     new Map(subs.filter((s) => s.categories).map((s) => [s.categories.name, s.categories])).values()
   );
   const subsForCategory = subs.filter((s) => s.categories?.name === p.category);
-  const preview = variants.find((v) => v.available !== false) || variants[0] || {};
+  const shownPacks = variants.filter((v) => v.hidden !== true);
+  const preview = shownPacks.find((v) => v.available !== false) || shownPacks[0] || variants[0] || {};
 
   return (
     <>
@@ -341,10 +343,21 @@ export default function ProductEdit() {
                           value={v.net_max_g ?? ""} disabled={soldBy === "weight"}
                           onChange={(e) => setVar(i, { net_max_g: e.target.value })} /></td>
                         <td>
-                          <button className={"btn sm " + (v.available !== false ? "accent" : "ghost")}
-                            onClick={() => setVar(i, { available: v.available === false })}>
-                            {v.available !== false ? "On" : "Sold out"}
-                          </button>
+                          {/* The same three answers the product has, one level
+                              down. "Sold out" is finished today and stays on the
+                              page struck through; "Hidden" is a size we no longer
+                              offer and disappears. Deleting is for a pack that
+                              should never have existed. */}
+                          <select className={"st-sel st-" + packStatus(v)}
+                            value={packStatus(v)}
+                            onChange={(e) => setVar(i, {
+                              available: e.target.value === "available",
+                              hidden: e.target.value === "hidden",
+                            })}>
+                            <option value="available">On sale</option>
+                            <option value="soldout">Sold out</option>
+                            <option value="hidden">Hidden</option>
+                          </select>
                         </td>
                       </tr>
                     );
