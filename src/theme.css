@@ -569,3 +569,9 @@ textarea {
 .no-brow.ok, .no-brow.ok b { color: var(--ok); }
 .no-brow.grand { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 12px;
   font-family: "Playfair Display", serif; font-size: 19px; font-weight: 700; color: var(--ink); }
+
+/* A fee a rule waived, rather than one that merely happens to be zero. The
+   website spells this out; the admin should too, or the shop cannot tell the
+   difference between "free by rule" and "not charged by mistake". */
+.no-free { font-size: 9.5px; font-weight: 700; letter-spacing: .4px; padding: 1px 6px;
+  border-radius: 20px; background: rgba(46,125,79,.15); color: var(--ok); vertical-align: 1px; }

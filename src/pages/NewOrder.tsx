@@ -49,6 +49,7 @@ export default function NewOrder() {
   const [pay, setPay] = useState<"upi" | "cash">("upi");
 
   const [feeOverride, setFeeOverride] = useState<string>("");
+  const [packOverride, setPackOverride] = useState<string>("");
   const [adjustment, setAdjustment] = useState<string>("");
   const [note, setNote] = useState("");
 
@@ -147,20 +148,24 @@ export default function NewOrder() {
     // The quote priced the catalogue; scale its discount if lines were repriced.
     const discount = Number(q.discount || 0);
     const fee = feeOverride !== "" ? Number(feeOverride) : Number(q.delivery_fee || 0);
-    const packing = Number(q.packing_fee || 0);
+    const serverPack = Number(q.packing_fee || 0);
+    const packing = packOverride !== "" ? Number(packOverride) : serverPack;
     const platform = Number(q.platform_fee || 0);
     const tax = Number(q.tax_total || 0);
     const adj = Number(adjustment) || 0;
     const grand = Math.max(0, sub - discount + fee + packing + platform + tax + adj);
     return { sub, listSub, discount, fee, packing, platform, tax, adj, grand,
-             serverFee: Number(q.delivery_fee || 0) };
-  }, [cart, quote, feeOverride, adjustment]);
+             serverFee: Number(q.delivery_fee || 0), serverPack,
+             deliveryWaived: q.delivery_waived === true };
+  }, [cart, quote, feeOverride, packOverride, adjustment]);
 
   const overrides = [
     ...cart.filter((l) => l.price !== l.listPrice).map(
       (l) => `${l.name} (${l.variant}) ${inr(l.listPrice)}→${inr(l.price)}`),
     ...(feeOverride !== "" && Number(feeOverride) !== totals.serverFee
       ? [`delivery ${inr(totals.serverFee)}→${inr(Number(feeOverride))}`] : []),
+    ...(packOverride !== "" && Number(packOverride) !== totals.serverPack
+      ? [`packing ${inr(totals.serverPack)}→${inr(Number(packOverride))}`] : []),
     ...(totals.adj !== 0 ? [`adjustment ${totals.adj > 0 ? "+" : "−"}${inr(Math.abs(totals.adj))}`] : []),
   ];
 
@@ -184,6 +189,7 @@ export default function NewOrder() {
         coupon_code: coupon.trim() || null,
         payment_method: pay,
         delivery_fee: feeOverride !== "" ? Number(feeOverride) : null,
+        packing_fee: packOverride !== "" ? Number(packOverride) : null,
         adjustment: Number(adjustment) || 0,
         note: note.trim() || null,
       });
@@ -334,13 +340,29 @@ export default function NewOrder() {
               <div className="no-brow ok"><span>{quote?.coupon || "Discount"}</span>
                 <b>−{inr(totals.discount)}</b></div>
             )}
+            {/* The same rows the website shows, in the same order — but every fee
+                is editable here, because a phone order is where the shop makes
+                the exceptions it can't make on a self-service checkout.
+
+                FREE is spelled out rather than left as a bare ₹0: a waived fee
+                and a zero fee look identical otherwise, and the shop should be
+                able to see that a rule did it. */}
             <div className="no-brow">
-              <span>Delivery</span>
+              <span>Delivery{" "}
+                {totals.deliveryWaived && feeOverride === "" && <span className="no-free">FREE</span>}
+              </span>
               <input type="number" style={{ width: 84, textAlign: "right" }}
                 value={feeOverride !== "" ? feeOverride : String(totals.serverFee)}
                 onChange={(e) => setFeeOverride(e.target.value)} />
             </div>
-            {totals.packing > 0 && <div className="no-brow"><span>Packing</span><b>{inr(totals.packing)}</b></div>}
+            <div className="no-brow">
+              <span>Packing{" "}
+                {totals.serverPack === 0 && packOverride === "" && <span className="no-free">FREE</span>}
+              </span>
+              <input type="number" style={{ width: 84, textAlign: "right" }}
+                value={packOverride !== "" ? packOverride : String(totals.serverPack)}
+                onChange={(e) => setPackOverride(e.target.value)} />
+            </div>
             {totals.platform > 0 && <div className="no-brow"><span>Platform fee</span><b>{inr(totals.platform)}</b></div>}
             {totals.tax > 0 && <div className="no-brow"><span>Tax</span><b>{inr(totals.tax)}</b></div>}
             {totals.adj !== 0 && (
