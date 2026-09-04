@@ -176,6 +176,30 @@ async function getJson<T>(path: string): Promise<T> {
 const send = (path: string, method: string, body?: unknown) =>
   authFetch(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
+/// Price an order through the SAME endpoint the website uses.
+///
+/// The admin used to run its own pricing engine, which is how Chicken Curry Cut
+/// came to read ₹200 there and ₹129 to a customer. One engine, one answer.
+///
+/// This route is public — the website calls it unauthenticated — so it doesn't
+/// go through authFetch.
+export async function quoteOrder(body: Record<string, unknown>): Promise<any> {
+  const res = await fetch(`${API_BASE}/api/checkout/quote`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("Could not price this order.");
+  return res.json();
+}
+
+/// Create an order the shop took on the phone. The server re-prices everything
+/// and its answer is what gets stored, whatever the browser worked out.
+export async function createAdminOrder(body: Record<string, unknown>): Promise<any> {
+  const res = await authFetch("admin/orders", { method: "POST", body: JSON.stringify(body) });
+  return res.json();
+}
+
 export const adminApi = {
   // Launch. getLaunch is public (no token) so the same call works from the site.
   getLaunch: () => getJson<any>("launch"),
