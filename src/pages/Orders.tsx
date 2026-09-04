@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useDB } from "../useStore";
 import { store } from "../lib/data";
 import { CustomerBadge, CustomerPhone } from "../lib/customer";
-import { fetchStaff, createStaff, resetStaffPin, type StaffMember } from "../lib/apiClient";
+import { fetchStaff, createStaff, resetStaffPin, adminApi, type StaffMember } from "../lib/apiClient";
 import type { Order, OrderStatus } from "../lib/types";
 
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
@@ -38,6 +38,30 @@ export default function Orders() {
   const [delivery, setDelivery] = useState<StaffMember[]>([]);
   const [staffError, setStaffError] = useState<string | null>(null);
   const [staffLoading, setStaffLoading] = useState(true);
+
+  // The bot a rider must open before assignment pings can reach them. A warning
+  // was already shown beside every unlinked rider, which on its own was useless:
+  // the shop could see the problem and had nothing to send them.
+  const [botLink, setBotLink] = useState<string | null>(null);
+  useEffect(() => {
+    adminApi.getTelegramBot().then((b) => setBotLink(b.link)).catch(() => {});
+  }, []);
+
+  const inviteToTelegram = (s: StaffMember) => {
+    if (!botLink) {
+      window.alert("The Telegram bot username isn't configured on the server yet.");
+      return;
+    }
+    const lines = [
+      `Hi ${s.name}, please open this link on your phone and tap START, then share your number when it asks:`,
+      "",
+      botLink,
+      "",
+      "You'll then get a Telegram message the moment an order is assigned to you.",
+    ].join("\n");
+    const to = String(s.phone || "").replace(/\D/g, "");
+    window.open(`https://wa.me/${to}?text=${encodeURIComponent(lines)}`, "_blank", "noopener");
+  };
 
   const loadStaff = useCallback(() => {
     setStaffLoading(true);
@@ -278,6 +302,10 @@ export default function Orders() {
                     : "Not on Telegram yet — ask them to open the bot and share their number"}>
                     {d.telegram_chat_id ? "✈️" : "⚠️"}
                   </span>
+                  {!d.telegram_chat_id && (
+                    <button className="linkish" title="Send them the Telegram link on WhatsApp"
+                      onClick={() => inviteToTelegram(d)}>Link&nbsp;✈️</button>
+                  )}
                   <button className="linkish" title="Reset PIN" onClick={() => resetPin(d)}>🔑</button>
                 </span>
               ))}

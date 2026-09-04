@@ -23,6 +23,14 @@ export default function Products() {
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
 
+  // 43 products is past the point where scrolling finds anything. Three filters,
+  // because those are the three questions the shop actually asks of this screen:
+  // which meat, which cut, and what state is it in.
+  const [fCat, setFCat] = useState("");
+  const [fSub, setFSub] = useState("");
+  const [fStatus, setFStatus] = useState("");
+  const [q, setQ] = useState("");
+
   // Price edits are staged per variant so a half-typed number is never saved.
   const [edits, setEdits] = useState<Record<string, string>>({});
   const stage = (id: string, v: string) => setEdits((e) => ({ ...e, [id]: v }));
@@ -109,9 +117,23 @@ export default function Products() {
     if (ok) { setAddPackFor(null); setPack({ label: "", weight_g: 1000, price: "", mrp: "" }); }
   };
 
+  const subName = (p: Product) => p.subcategories?.name || "";
+
+  const shown = products.filter((p) =>
+    (!fCat || (p.category || "Uncategorised") === fCat) &&
+    (!fSub || subName(p) === fSub) &&
+    (!fStatus || statusOf(p) === fStatus) &&
+    (!q.trim() || String(p.name || "").toLowerCase().includes(q.trim().toLowerCase()))
+  );
+
+  // Options come from the products themselves, so a category added later needs
+  // no change here.
+  const cats = [...new Set(products.map((p) => p.category || "Uncategorised"))].sort();
+  const subs = [...new Set(products.filter((p) => !fCat || p.category === fCat).map(subName).filter(Boolean))].sort();
+
   // Group by category, keeping the order the API returned (sort_order).
   const grouped = new Map<string, Product[]>();
-  for (const p of products) {
+  for (const p of shown) {
     const cat = p.category || "Uncategorised";
     if (!grouped.has(cat)) grouped.set(cat, []);
     grouped.get(cat)!.push(p);
@@ -133,10 +155,38 @@ export default function Products() {
 
       {adding && <AddProduct onAdded={() => { setAdding(false); refresh(); }} onCancel={() => setAdding(false)} />}
 
+      <div className="panel pf-bar">
+        <input className="pf-q" value={q} placeholder="Search a product…"
+          onChange={(e) => setQ(e.target.value)} />
+        <select value={fCat} onChange={(e) => { setFCat(e.target.value); setFSub(""); }}>
+          <option value="">All categories</option>
+          {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={fSub} onChange={(e) => setFSub(e.target.value)}>
+          <option value="">All sub-categories</option>
+          {subs.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
+          <option value="">Any status</option>
+          {STATUS.map((st) => <option key={st.id} value={st.id}>{st.label}</option>)}
+        </select>
+        <span className="pf-count">
+          {shown.length} of {products.length}
+        </span>
+        {(fCat || fSub || fStatus || q) && (
+          <button className="btn sm ghost"
+            onClick={() => { setFCat(""); setFSub(""); setFStatus(""); setQ(""); }}>
+            Clear
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <div className="panel"><p className="muted">Loading products…</p></div>
       ) : products.length === 0 ? (
         <div className="panel"><p className="muted">No products yet — add your first one above.</p></div>
+      ) : shown.length === 0 ? (
+        <div className="panel"><p className="muted">Nothing matches those filters.</p></div>
       ) : (
         [...grouped.entries()].map(([category, items]) => (
           <div className="panel" key={category}>

@@ -215,6 +215,7 @@ export const adminApi = {
     send(`admin/orders/${encodeURIComponent(id)}/receipt`, "POST"),
 
   getReviews: () => getJson<any[]>("admin/reviews"),
+  getTelegramBot: () => getJson<{ username: string; link: string | null }>("admin/telegram-bot"),
 
   getBroadcastAudience: () => getJson<any>("admin/broadcast/audience"),
   getBroadcastTemplates: () => getJson<any>("admin/broadcast/templates"),

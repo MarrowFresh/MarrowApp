@@ -538,3 +538,10 @@ textarea {
 .st-sel.st-soldout   { border-color: var(--bad); color: var(--bad); }
 .st-sel.st-preorder  { border-color: var(--gold); color: #8a6d2f; }
 .st-sel.st-hidden    { color: var(--muted); }
+
+/* Product filters. With 43 products, scrolling stops being a way to find one. */
+.pf-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px 18px; }
+.pf-bar select { font: inherit; font-size: 13px; padding: 7px 10px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--cream); color: var(--ink); }
+.pf-q { flex: 1 1 220px; min-width: 180px; }
+.pf-count { font-size: 12.5px; color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
