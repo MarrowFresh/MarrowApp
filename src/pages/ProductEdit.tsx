@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../lib/apiClient";
+import { productImage } from "../lib/productImage";
+
 import { STATUS, statusOf, applyStatus, packStatus, type ProductStatus } from "../lib/productStatus";
+
+// The six values products.category accepts. "Seafood" is a shop-front group,
+// not a storable category, so it deliberately does not appear here.
+const PRODUCT_CATEGORIES = ["Chicken", "Mutton", "Fish", "Prawns", "Crabs", "Eggs"];
 
 // Everything about one product, on one screen.
 //
@@ -136,10 +142,20 @@ export default function ProductEdit() {
     }
   };
 
-  const categories = Array.from(
-    new Map(subs.filter((s) => s.categories).map((s) => [s.categories.name, s.categories])).values()
+  // The Category box offers what the database can actually store, which is not
+  // the same as the shop-front grouping. The categories table calls fish, prawns
+  // and crabs "Seafood"; products.category has no such value, so building the
+  // box from that table offered a category the database rejects while hiding the
+  // three it accepts. Every fish, prawn and crab product then opened with a
+  // blank Category and a blank Sub-category, and saving raised a 500.
+  const categories = PRODUCT_CATEGORIES;
+
+  // A subcategory belongs to this category if its parent says so (Chicken →
+  // Boneless, Curry Cut, Wings) or if the subcategory IS the category, which is
+  // how the three seafood kinds are stored (Seafood → Fish, Prawns, Crabs).
+  const subsForCategory = subs.filter(
+    (s) => s.categories?.name === p.category || s.name === p.category
   );
-  const subsForCategory = subs.filter((s) => s.categories?.name === p.category);
   const shownPacks = variants.filter((v) => v.hidden !== true);
   const preview = shownPacks.find((v) => v.available !== false) || shownPacks[0] || variants[0] || {};
 
@@ -176,7 +192,7 @@ export default function ProductEdit() {
                 <div className="pe-hint">The wording beside the price, e.g. “per 500g”.</div></div>
               <div><label>Category</label>
                 <select value={p.category || ""} onChange={(e) => set({ category: e.target.value, subcategory_id: "" })}>
-                  {categories.map((c: any) => <option key={c.name}>{c.name}</option>)}
+                  {categories.map((c) => <option key={c}>{c}</option>)}
                 </select></div>
               <div><label>Sub-category</label>
                 <select value={p.subcategory_id || ""} onChange={(e) => set({ subcategory_id: e.target.value })}>
@@ -297,7 +313,7 @@ export default function ProductEdit() {
               </div>
               <div className="pe-thumb">
                 {p.image_url
-                  ? <img src={p.image_url} alt="" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+                  ? <img src={productImage(p.image_url)} alt="" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
                   : <span>no photo</span>}
               </div>
             </div>
