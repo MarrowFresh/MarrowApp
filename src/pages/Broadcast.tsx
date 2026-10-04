@@ -114,7 +114,11 @@ export default function Broadcast() {
     const cards = rows.map((c) => {
       // An unnamed contact becomes its own number, so it is still findable
       // rather than arriving in the address book as a blank row.
-      const name = `MF ${(c.name || "").trim() || String(c.phone).replace(/\D/g, "").slice(-10)}`;
+      const label = (c.name || "").trim() || String(c.phone).replace(/\D/g, "").slice(-10);
+      // "MF Customer Sri", "MF Lead Ramesh" — the address book sorts by name, so
+      // this keeps every customer together and every lead after them.
+      const kind = c.segment === "customer" ? "Customer" : "Lead";
+      const name = `MF ${kind} ${label}`;
       return [
         "BEGIN:VCARD",
         "VERSION:3.0",
