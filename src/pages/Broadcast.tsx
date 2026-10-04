@@ -24,6 +24,10 @@ export default function Broadcast() {
   const [audience, setAudience] = useState<"all" | "customers" | "leads" | "picked">("all");
   const [picked, setPicked] = useState<string[]>([]);
   const [tplName, setTplName] = useState("");
+  // Only used when Meta's template list could not be read (WhatsApp:WabaId
+  // unset). Then nothing knows how many blanks the template has, so the shop
+  // has to say — guessing it silently sent the wrong number to Meta.
+  const [manualVars, setManualVars] = useState(0);
   const [image, setImage] = useState("");
   const [vars, setVars] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -45,6 +49,8 @@ export default function Broadcast() {
   if (loading) return <div className="panel"><p className="muted">Loading…</p></div>;
 
   const tpl = tpls.find((t) => t.name === tplName);
+  // How many {{n}} blanks the chosen template has.
+  const varCount = tpl ? (tpl.variables ?? 0) : manualVars;
   const count =
     audience === "customers" ? aud?.customers ?? 0 :
     audience === "leads" ? aud?.leads ?? 0 :
@@ -68,7 +74,7 @@ export default function Broadcast() {
         templateName: tplName,
         language: tpl?.language || "en",
         imageUrl: image || null,
-        variables: vars.slice(0, tpl?.variables ?? 0),
+        variables: vars.slice(0, varCount),
         audience,
         phones: audience === "picked" ? picked : null,
       });
@@ -171,7 +177,21 @@ export default function Broadcast() {
                 <input value={tplName} placeholder="weekend_offer"
                   onChange={(e) => setTplName(e.target.value)} />
                 <div className="bc-hint">
-                  Exactly as it appears in Meta Business Manager.
+                  Exactly as it appears in Meta Business Manager — same spelling, same
+                  underscores, all lower case.
+                </div>
+                <label style={{ marginTop: 12 }}>How many blanks does it have?</label>
+                <input type="number" min={0} max={10} value={manualVars}
+                  onChange={(e) => {
+                    const n = Math.max(0, Math.min(10, Number(e.target.value) || 0));
+                    setManualVars(n);
+                    setVars((v) => v.slice(0, n));
+                  }} />
+                <div className="bc-hint">
+                  Count the <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> markers in the
+                  template you had approved. Send the wrong number and Meta rejects every
+                  message. Set <b>WhatsApp:WabaId</b> and this screen reads it from Meta
+                  itself, along with the exact wording.
                 </div>
               </div>
             )}
@@ -188,7 +208,7 @@ export default function Broadcast() {
                   </div>
                 </div>
               )}
-              {Array.from({ length: tpl?.variables ?? (tplName && !tpl ? 2 : 0) }).map((_, i) => (
+              {Array.from({ length: varCount }).map((_, i) => (
                 <div key={i}>
                   <label>Blank {i + 1}</label>
                   <input value={vars[i] || ""} maxLength={60}
