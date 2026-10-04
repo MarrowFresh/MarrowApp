@@ -25,9 +25,11 @@ export default function Broadcast() {
   const [picked, setPicked] = useState<string[]>([]);
   const [tplName, setTplName] = useState("");
   // Only used when Meta's template list could not be read (WhatsApp:WabaId
-  // unset). Then nothing knows how many blanks the template has, so the shop
-  // has to say — guessing it silently sent the wrong number to Meta.
-  const [manualVars, setManualVars] = useState(0);
+  // unset). Then nothing here knows the template at all, so the shop pastes the
+  // wording it had approved: the blanks count themselves from it, and the
+  // preview finally shows something. It is never sent — Meta fills in its own
+  // stored copy — it is how the shop sees what it is about to send.
+  const [manualBody, setManualBody] = useState("");
   const [image, setImage] = useState("");
   const [vars, setVars] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -49,8 +51,13 @@ export default function Broadcast() {
   if (loading) return <div className="panel"><p className="muted">Loading…</p></div>;
 
   const tpl = tpls.find((t) => t.name === tplName);
-  // How many {{n}} blanks the chosen template has.
-  const varCount = tpl ? (tpl.variables ?? 0) : manualVars;
+  // The wording, whether Meta supplied it or the shop pasted it.
+  const body = tpl?.body || manualBody;
+  // How many {{n}} blanks it has — the highest marker in the wording.
+  const varCount = tpl
+    ? (tpl.variables ?? 0)
+    : [...manualBody.matchAll(/\{\{\s*(\d+)\s*\}\}/g)]
+        .reduce((max, m) => Math.max(max, Number(m[1])), 0);
   const count =
     audience === "customers" ? aud?.customers ?? 0 :
     audience === "leads" ? aud?.leads ?? 0 :
@@ -58,7 +65,7 @@ export default function Broadcast() {
     aud?.total ?? 0;
 
   // The body with its {{n}} blanks filled, which is what actually arrives.
-  const preview = (tpl?.body || "")
+  const preview = body
     .replace(/\{\{\s*(\d+)\s*\}\}/g, (_m: string, n: string) => vars[Number(n) - 1] || "…");
 
   const send = async () => {
@@ -180,18 +187,15 @@ export default function Broadcast() {
                   Exactly as it appears in Meta Business Manager — same spelling, same
                   underscores, all lower case.
                 </div>
-                <label style={{ marginTop: 12 }}>How many blanks does it have?</label>
-                <input type="number" min={0} max={10} value={manualVars}
-                  onChange={(e) => {
-                    const n = Math.max(0, Math.min(10, Number(e.target.value) || 0));
-                    setManualVars(n);
-                    setVars((v) => v.slice(0, n));
-                  }} />
+                <label style={{ marginTop: 12 }}>The approved message</label>
+                <textarea rows={6} value={manualBody}
+                  placeholder={"Today you get {{1}} off on orders above ₹{{2}}.\nUse code {{3}} at checkout."}
+                  onChange={(e) => setManualBody(e.target.value)} />
                 <div className="bc-hint">
-                  Count the <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> markers in the
-                  template you had approved. Send the wrong number and Meta rejects every
-                  message. Set <b>WhatsApp:WabaId</b> and this screen reads it from Meta
-                  itself, along with the exact wording.
+                  Paste the body exactly as Meta approved it, <code>{"{{1}}"}</code> markers
+                  and all. This is not what gets sent — WhatsApp uses its own copy — it is
+                  how the blanks below are worked out and how the preview knows what to show.
+                  Set <b>WhatsApp:WabaId</b> and all of this arrives from Meta on its own.
                 </div>
               </div>
             )}

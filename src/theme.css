@@ -478,7 +478,7 @@ textarea {
 .bc-grid { display: grid; gap: 14px; }
 .bc-cols label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .4px;
   text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
-.bc-cols input { width: 100%; }
+.bc-cols input, .bc-cols textarea { width: 100%; }
 
 .bc-rail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 12px; }
 @media (max-width: 950px) { .bc-rail { position: static; } }
