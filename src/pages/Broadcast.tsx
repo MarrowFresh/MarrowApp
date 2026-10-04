@@ -68,6 +68,38 @@ export default function Broadcast() {
   const preview = body
     .replace(/\{\{\s*(\d+)\s*\}\}/g, (_m: string, n: string) => vars[Number(n) - 1] || "…");
 
+  /// The audience as a spreadsheet — the same people the send would reach, so
+  /// the shop can check the list before paying to message it.
+  const downloadContacts = () => {
+    const rows: Row[] = aud?.contacts || [];
+    const cell = (v: unknown) => {
+      const s = String(v ?? "");
+      // A leading =, +, - or @ makes Excel treat a cell as a formula, and every
+      // phone here starts with a country code — quote and prefix so +9194… stays
+      // a number rather than becoming a broken formula.
+      return /^[=+\-@]/.test(s) ? `"'${s.replace(/"/g, '""')}"` : `"${s.replace(/"/g, '""')}"`;
+    };
+    const csv = [
+      ["Name", "Phone", "Type", "Last contact", "Can receive a typed reply"].join(","),
+      ...rows.map((c) => [
+        cell(c.name || ""),
+        cell(c.phone),
+        cell(c.segment === "customer" ? "Customer" : "Lead"),
+        cell(String(c.last_seen || "").slice(0, 10)),
+        cell(c.window_open ? "Yes" : "No"),
+      ].join(",")),
+    ].join("\r\n");
+
+    // A BOM, so Excel opens Telugu and other non-ASCII names correctly.
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `marrow-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const send = async () => {
     if (!tplName) return window.alert("Choose a template first.");
     if (!window.confirm(
@@ -154,8 +186,13 @@ export default function Broadcast() {
               </div>
             )}
 
-            <div className="bc-hint">
-              Your own test numbers are always excluded, and so is anyone who replied STOP.
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+              <div className="bc-hint" style={{ margin: 0 }}>
+                Your own test numbers are always excluded, and so is anyone who replied STOP.
+              </div>
+              <button className="btn" onClick={downloadContacts} disabled={!aud?.contacts?.length}>
+                ⤓ Download list
+              </button>
             </div>
           </section>
 
