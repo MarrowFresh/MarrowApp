@@ -100,6 +100,42 @@ export default function Broadcast() {
     URL.revokeObjectURL(url);
   };
 
+  /// The same people as a vCard, which is what a phone can import. A CSV cannot
+  /// be opened by Contacts on either Android or iPhone.
+  ///
+  /// Every name is prefixed "MF" so all of them land together in the address
+  /// book, and can be found — or removed again — in one go.
+  const downloadVcards = () => {
+    const rows: Row[] = aud?.contacts || [];
+    const esc = (s: unknown) => String(s ?? "")
+      .replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+    const e164 = (p: string) => (p.startsWith("+") ? p : "+" + p.replace(/\D/g, ""));
+
+    const cards = rows.map((c) => {
+      // An unnamed contact becomes its own number, so it is still findable
+      // rather than arriving in the address book as a blank row.
+      const name = `MF ${(c.name || "").trim() || String(c.phone).replace(/\D/g, "").slice(-10)}`;
+      return [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        `N:;${esc(name)};;;`,
+        `FN:${esc(name)}`,
+        `ORG:Marrow Fresh (${c.segment})`,
+        `TEL;TYPE=CELL:${e164(String(c.phone))}`,
+        `NOTE:${esc(`Marrow Fresh ${c.segment} — last contact ${String(c.last_seen || "").slice(0, 10) || "unknown"}`)}`,
+        "END:VCARD",
+      ].join("\r\n");
+    });
+
+    const blob = new Blob([cards.join("\r\n") + "\r\n"], { type: "text/vcard;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `marrow-contacts-${new Date().toISOString().slice(0, 10)}.vcf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const send = async () => {
     if (!tplName) return window.alert("Choose a template first.");
     if (!window.confirm(
@@ -190,9 +226,14 @@ export default function Broadcast() {
               <div className="bc-hint" style={{ margin: 0 }}>
                 Your own test numbers are always excluded, and so is anyone who replied STOP.
               </div>
-              <button className="btn" onClick={downloadContacts} disabled={!aud?.contacts?.length}>
-                ⤓ Download list
-              </button>
+              <div className="row" style={{ gap: 8, flex: "none" }}>
+                <button className="btn" onClick={downloadContacts} disabled={!aud?.contacts?.length}>
+                  ⤓ Spreadsheet
+                </button>
+                <button className="btn" onClick={downloadVcards} disabled={!aud?.contacts?.length}>
+                  ⤓ Phone contacts
+                </button>
+              </div>
             </div>
           </section>
 
