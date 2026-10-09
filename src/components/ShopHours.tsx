@@ -7,11 +7,40 @@ import { adminApi, type ShopStatus } from "../lib/apiClient";
 // a pre-order for the next opening — the customer who wants mutton tonight will
 // still want it at seven, and turning them away loses the sale to whoever is
 // still answering. What changes is what the website and the bot promise.
-const MODES: { id: ShopStatus["mode"]; label: string; hint: string }[] = [
-  { id: "auto",   label: "Follow the hours", hint: "Opens and closes by the clock below. The normal setting." },
-  { id: "open",   label: "Open now",         hint: "Take orders whatever the clock says — a late night, a festival." },
-  { id: "closed", label: "Stopped",          hint: "Stop now: sold out, a power cut. Orders still arrive, marked for the next opening." },
+/// The three buttons answer one question: what decides whether orders are
+/// being taken — the clock, or you?
+///
+/// The labels say which, because "Follow the hours" meant nothing to the shop
+/// on its own. Automatic is where this sits nearly every day; the other two are
+/// for the exceptional one, and they stay put until someone changes them back.
+const MODES = (open: string, close: string): {
+  id: ShopStatus["mode"]; label: string; hint: string;
+}[] => [
+  {
+    id: "auto",
+    label: `Automatic — ${nice(open)} to ${nice(close)}`,
+    hint: "Opens and closes itself by the clock. Leave it here on an ordinary day.",
+  },
+  {
+    id: "open",
+    label: "Stay open — ignore the clock",
+    hint: "A late night, a festival. Keeps taking orders past closing time until you switch back.",
+  },
+  {
+    id: "closed",
+    label: "Stop now — until I say otherwise",
+    hint: "Sold out, a power cut. Stops orders even though the clock says you're open.",
+  },
 ];
+
+/// "06:00" → "6:00 am". A shop reads the clock the way it speaks it.
+function nice(hhmm: string): string {
+  const [h, m] = (hhmm || "").split(":").map(Number);
+  if (!isFinite(h)) return hhmm;
+  const suffix = h < 12 ? "am" : "pm";
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return `${hour}:${String(m || 0).padStart(2, "0")} ${suffix}`;
+}
 
 export default function ShopHours() {
   const [s, setS] = useState<ShopStatus | null>(null);
@@ -71,8 +100,10 @@ export default function ShopHours() {
              <div className="sh-say">Customers see: “{s.message}”</div></>}
       </div>
 
+      <div className="sh-ask">What decides whether you're taking orders?</div>
+
       <div className="sh-modes">
-        {MODES.map((m) => (
+        {MODES(draft.open_time || s.open_time, draft.close_time || s.close_time).map((m) => (
           <button key={m.id} className="sh-mode" aria-checked={s.mode === m.id} role="radio"
             disabled={busy} onClick={() => apply({ mode: m.id })}>
             <span className="dot" />
@@ -106,9 +137,10 @@ export default function ShopHours() {
       </div>
 
       <div className="sh-hint">
-        Hours are shop time. Closing at <b>{draft.close_time || s.close_time}</b> does not turn
-        customers away — their order arrives marked for the next opening, so the night's orders
-        are waiting when you start cutting.
+        <b>Closing does not turn customers away.</b> While you are shut, every product shows as
+        pre-order and the order still arrives, marked for the next opening — so the night&rsquo;s
+        orders are waiting when you start cutting, instead of someone ringing back in the
+        morning. Hours are shop time.
       </div>
 
       {err && <p style={{ color: "var(--bad)", marginTop: 10, fontSize: 13 }}>{err}</p>}
