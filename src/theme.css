@@ -575,3 +575,58 @@ textarea {
    difference between "free by rule" and "not charged by mistake". */
 .no-free { font-size: 9.5px; font-weight: 700; letter-spacing: .4px; padding: 1px 6px;
   border-radius: 20px; background: rgba(46,125,79,.15); color: var(--ok); vertical-align: 1px; }
+
+/* ── Shop hours (Settings) ──────────────────────────────────────────────────
+   Open or closed is the thing the shop checks at a glance, so the state is a
+   coloured band rather than a line of text among other lines. */
+.sh-pill { font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 3px 10px;
+  border-radius: 20px; }
+.sh-pill.on  { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.sh-pill.off { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+
+.sh-now { padding: 12px 14px; border-radius: 10px; font-size: 13.5px; margin-bottom: 14px;
+  border-left: 3px solid var(--ok); background: color-mix(in srgb, var(--ok) 7%, transparent); }
+.sh-now.off { border-left-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 7%, transparent); }
+.sh-say { margin-top: 6px; font-size: 12.5px; color: var(--muted); font-style: italic; }
+
+.sh-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px; margin-bottom: 16px; }
+.sh-mode { display: flex; align-items: flex-start; gap: 10px; text-align: left; cursor: pointer;
+  padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fff;
+  font-family: inherit; }
+.sh-mode .dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid var(--line);
+  flex: none; margin-top: 2px; }
+.sh-mode[aria-checked="true"] { border-color: var(--terracotta);
+  background: color-mix(in srgb, var(--terracotta) 5%, transparent); }
+.sh-mode[aria-checked="true"] .dot { border-color: var(--terracotta); background: var(--terracotta);
+  box-shadow: inset 0 0 0 3px #fff; }
+.sh-mode .t { display: flex; flex-direction: column; gap: 2px; }
+.sh-mode .t b { font-size: 13.5px; font-weight: 600; }
+.sh-mode .t span { font-size: 12px; color: var(--muted); line-height: 1.45; }
+.sh-mode:disabled { opacity: .6; cursor: default; }
+
+.sh-times { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.sh-times input { width: 100%; }
+.sh-hint { margin-top: 12px; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+/* ── Cancel-with-a-reason dialog ────────────────────────────────────────────
+   A confirm box cannot ask a question, and cancelling needs one asked: the
+   reason is the only part of a cancellation worth keeping. */
+.modal-back { position: fixed; inset: 0; z-index: 200; background: rgba(34, 25, 19, .45);
+  display: grid; place-items: center; padding: 20px; }
+.modal { background: #fff; border-radius: 14px; padding: 22px 24px; width: min(460px, 100%);
+  box-shadow: 0 20px 50px rgba(34, 25, 19, .3); max-height: 90vh; overflow-y: auto; }
+.modal h3 { margin: 0 0 6px; font-size: 18px; }
+
+.cx-reasons { display: flex; flex-direction: column; gap: 6px; }
+.cx-reason { display: flex; align-items: center; gap: 9px; text-align: left; cursor: pointer;
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff;
+  font-family: inherit; font-size: 13.5px; color: var(--ink); }
+.cx-reason .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line);
+  flex: none; }
+.cx-reason[aria-checked="true"] { border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 5%, transparent); }
+.cx-reason[aria-checked="true"] .dot { border-color: var(--bad); background: var(--bad);
+  box-shadow: inset 0 0 0 3px #fff; }
+.cx-reason:disabled { opacity: .6; cursor: default; }

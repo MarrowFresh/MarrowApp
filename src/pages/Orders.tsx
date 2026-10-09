@@ -6,6 +6,21 @@ import { CustomerBadge, CustomerPhone } from "../lib/customer";
 import { fetchStaff, createStaff, resetStaffPin, adminApi, type StaffMember } from "../lib/apiClient";
 import type { Order, OrderStatus } from "../lib/types";
 
+// The reasons a Marrow Fresh order actually gets cancelled, so the shop taps
+// instead of typing and the month's reasons can be counted. "Something else"
+// keeps the ones nobody anticipated.
+const OTHER = "Something else";
+const CANCEL_REASONS = [
+  "Customer changed their mind",
+  "Customer not reachable",
+  "Item sold out",
+  "Outside delivery area",
+  "Duplicate order",
+  "Payment not received",
+  "Shop closed / no stock today",
+  OTHER,
+];
+
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
 
 // "07 Aug 2026" / "4:25 pm" — split across two lines so the column stays narrow.
@@ -88,6 +103,11 @@ export default function Orders() {
   }, [staffError, loadStaff]);
 
   // ─── Filters ───────────────────────────────────────────────────────────────
+  const [cancelling, setCancelling] = useState<Order | null>(null);
+  const [reason, setReason] = useState("");
+  const [other, setOther] = useState("");
+  const [cancelBusy, setCancelBusy] = useState(false);
+
   const [q, setQ] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -243,6 +263,26 @@ export default function Orders() {
   const markDelivered = (o: Order) => {
     if (window.confirm(`Mark order #${o.order_no} as delivered? This notifies the customer.`))
       store.setOrderStatus(o.id, "Delivered");
+  };
+
+  // Cancelling without a reason made "the customer changed their mind" and "we
+  // ran out of mutton" the same row, and only the second one is worth counting
+  // at the end of a month. The list is the common cases; anything else is typed.
+  const confirmCancel = async () => {
+    if (!cancelling) return;
+    const text = (reason === OTHER ? other : reason).trim();
+    if (!text) return;
+
+    setCancelBusy(true);
+    try {
+      await adminApi.cancelOrder(cancelling.id, text);
+      setCancelling(null);
+      await store.refreshOrders();
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not cancel the order.");
+    } finally {
+      setCancelBusy(false);
+    }
   };
 
   return (
@@ -466,6 +506,15 @@ export default function Orders() {
                         ) : o.status === "Out for delivery" ? (
                           <button className="btn sm" onClick={() => markDelivered(o)}>✓ Delivered</button>
                         ) : o.status === "Delivered" ? <span className="free">✓ Done</span> : "—"}
+                        {/* Cancelling stays available right up to delivery — most
+                            cancellations happen after the order is already being
+                            cut, which is exactly when the reason matters. */}
+                        {o.status !== "Delivered" && o.status !== "Cancelled" && (
+                          <button className="btn sm danger" style={{ marginLeft: 6 }}
+                            onClick={() => { setCancelling(o); setReason(""); setOther(""); }}>
+                            Cancel
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -485,6 +534,43 @@ export default function Orders() {
           </>
         )}
       </div>
+
+      {cancelling && (
+        <div className="modal-back" onClick={() => !cancelBusy && setCancelling(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Cancel order #{cancelling.order_no}?</h3>
+            <p className="muted" style={{ fontSize: 13, marginBottom: 14 }}>
+              {cancelling.customer_name || "The customer"} is told the order is cancelled.
+              Pick the reason — it stays on the order.
+            </p>
+
+            <div className="cx-reasons">
+              {CANCEL_REASONS.map((r) => (
+                <button key={r} className="cx-reason" aria-checked={reason === r} role="radio"
+                  disabled={cancelBusy} onClick={() => setReason(r)}>
+                  <span className="dot" />{r}
+                </button>
+              ))}
+            </div>
+
+            {reason === OTHER && (
+              <input autoFocus value={other} maxLength={300} placeholder="What happened?"
+                style={{ width: "100%", marginTop: 10 }}
+                onChange={(e) => setOther(e.target.value)} />
+            )}
+
+            <div className="row" style={{ justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
+              <button className="btn" disabled={cancelBusy} onClick={() => setCancelling(null)}>
+                Keep the order
+              </button>
+              <button className="btn danger" onClick={confirmCancel}
+                disabled={cancelBusy || !reason || (reason === OTHER && !other.trim())}>
+                {cancelBusy ? "Cancelling…" : "Cancel the order"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

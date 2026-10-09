@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "../lib/apiClient";
 import { useResource } from "../lib/useResource";
+import ShopHours from "../components/ShopHours";
 
 // Shop settings — read from and written to the database, so a change here takes
 // effect immediately for the website AND the WhatsApp bot. (These used to save to
@@ -84,6 +85,11 @@ export default function SettingsPage() {
       {error && <div className="panel" style={{ borderColor: "#f5c6c0" }}>
         <span style={{ color: "#c0392b" }}>{error}</span>
       </div>}
+
+      {/* First on the page: whether the shop is open is the setting changed most
+          often, and the most urgent one when it is wrong. It saves on its own,
+          so it is not tied to the Save settings button above. */}
+      <ShopHours />
 
       <div className="grid2">
         <div className="panel">

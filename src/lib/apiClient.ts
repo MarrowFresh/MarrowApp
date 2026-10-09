@@ -176,6 +176,23 @@ async function getJson<T>(path: string): Promise<T> {
 const send = (path: string, method: string, body?: unknown) =>
   authFetch(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
 
+/// Like send, for the endpoints whose answer the screen actually shows.
+async function sendJson<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const res = await send(path, method, body);
+  return (await res.json()) as T;
+}
+
+/// Whether the shop is taking orders right now.
+export interface ShopStatus {
+  open: boolean;
+  mode: "auto" | "open" | "closed";
+  open_time: string;
+  close_time: string;
+  opens_at: string | null;
+  note: string | null;
+  message: string;
+}
+
 /// Price an order through the SAME endpoint the website uses.
 ///
 /// The admin used to run its own pricing engine, which is how Chicken Curry Cut
@@ -237,6 +254,24 @@ export const adminApi = {
 
   resendReceipt: (id: string) =>
     send(`admin/orders/${encodeURIComponent(id)}/receipt`, "POST"),
+
+  // ── Shop hours ────────────────────────────────────────────────────────────
+  // Whether the shop is taking orders. Public on the server, but the admin is
+  // the only thing that writes it.
+  getShopStatus: () => getJson<ShopStatus>("shop/status"),
+  saveShopHours: (v: {
+    openTime?: string; closeTime?: string; mode?: string; note?: string | null;
+  }) => sendJson<ShopStatus>("shop/hours", "PUT", v),
+
+  // Cancel an order, with the reason kept on the row.
+  cancelOrder: (id: string, reason: string) =>
+    sendJson<{ ok: boolean; status: string; reason: string }>(
+      `admin/orders/${encodeURIComponent(id)}/cancel`, "POST", { reason }),
+
+  // Put the whole catalogue on pre-order, or take it all off again.
+  preorderAll: (preorder: boolean, note?: string | null) =>
+    sendJson<{ ok: boolean; preorder: boolean; count: number; message: string }>(
+      "admin/products/preorder-all", "POST", { preorder, note: note || null }),
 
   getReviews: () => getJson<any[]>("admin/reviews"),
   getTelegramBot: () => getJson<{ username: string; link: string | null }>("admin/telegram-bot"),

@@ -22,6 +22,32 @@ export default function Products() {
 
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  // "Everything is pre-order" only when every product on sale says so — one
+  // product left off would otherwise flip the button to the wrong label.
+  const onSale = (products || []).filter((p) => p.available !== false);
+  const allPreorder = onSale.length > 0 && onSale.every((p) => p.preorder === true);
+
+  const togglePreorderAll = async (on: boolean) => {
+    const what = on
+      ? `Put all ${onSale.length} products on pre-order?\n\n` +
+        "Customers can still see everything and ask for it, but nothing can be " +
+        "added to a basket until you switch it back. Prices are untouched."
+      : `Put all ${onSale.length} products back on sale?`;
+    if (!window.confirm(what)) return;
+
+    setBulkBusy(true);
+    try {
+      const r = await adminApi.preorderAll(on);
+      await refresh();
+      window.alert(r.message);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not switch the catalogue.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   // 43 products is past the point where scrolling finds anything. Three filters,
   // because those are the three questions the shop actually asks of this screen:
@@ -146,9 +172,20 @@ export default function Products() {
           <h1>Products</h1>
           <div className="sub">Prices &amp; availability — live on the website and WhatsApp</div>
         </div>
-        <button className="btn primary" onClick={() => setAdding((a) => !a)}>
-          {adding ? "✕ Close" : "＋ Add product"}
-        </button>
+        <div className="row" style={{ gap: 8 }}>
+          {/* For the days the shop is not cutting. Switching forty-three products
+              by hand means the last few get missed and somebody orders mutton
+              that isn't there. Only the label changes — prices and hidden
+              products are left exactly as they are. */}
+          <button className="btn" disabled={bulkBusy} onClick={() => togglePreorderAll(!allPreorder)}>
+            {bulkBusy ? "Switching…"
+              : allPreorder ? "↩︎ Put everything back on sale"
+              : "⏳ Make everything pre-order"}
+          </button>
+          <button className="btn primary" onClick={() => setAdding((a) => !a)}>
+            {adding ? "✕ Close" : "＋ Add product"}
+          </button>
+        </div>
       </div>
 
       {error && <div className="panel"><span style={{ color: "#c0392b" }}>{error}</span></div>}
