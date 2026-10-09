@@ -492,29 +492,42 @@ export default function Orders() {
                         )}
                       </td>
                       <td>
-                        {o.status === "New" ? (
-                          <button className="btn sm primary" onClick={() => approve(o)}>✓ Approve</button>
-                        ) : o.status === "Cutting/Packing" ? (
-                          <button
-                            className="btn sm primary"
-                            disabled={!agent}
-                            title={agent ? `Dispatch with ${agent.name}` : "Assign a delivery boy first"}
-                            onClick={() => sendOut(o)}
-                          >
-                            🛵 Out for delivery
-                          </button>
-                        ) : o.status === "Out for delivery" ? (
-                          <button className="btn sm" onClick={() => markDelivered(o)}>✓ Delivered</button>
-                        ) : o.status === "Delivered" ? <span className="free">✓ Done</span> : "—"}
-                        {/* Cancelling stays available right up to delivery — most
-                            cancellations happen after the order is already being
-                            cut, which is exactly when the reason matters. */}
-                        {o.status !== "Delivered" && o.status !== "Cancelled" && (
-                          <button className="btn sm danger" style={{ marginLeft: 6 }}
-                            onClick={() => { setCancelling(o); setReason(""); setOther(""); }}>
-                            Cancel
-                          </button>
-                        )}
+                        {/* One row, one gap. The cancel button used to carry its own
+                            margin beside a bare "—", which left the column ragged
+                            and the two controls at different heights. */}
+                        <div className="ord-actions">
+                          {o.status === "New" ? (
+                            <button className="btn sm primary" onClick={() => approve(o)}>✓ Approve</button>
+                          ) : o.status === "Cutting/Packing" ? (
+                            <button
+                              className="btn sm primary"
+                              disabled={!agent}
+                              title={agent ? `Dispatch with ${agent.name}` : "Assign a delivery boy first"}
+                              onClick={() => sendOut(o)}
+                            >
+                              🛵 Out for delivery
+                            </button>
+                          ) : o.status === "Out for delivery" ? (
+                            <button className="btn sm" onClick={() => markDelivered(o)}>✓ Delivered</button>
+                          ) : o.status === "Delivered" ? (
+                            <span className="free">✓ Done</span>
+                          ) : (
+                            <span className="ord-none">—</span>
+                          )}
+
+                          {/* Cancelling stays available right up to delivery — most
+                              cancellations happen once the order is already being
+                              cut, which is exactly when the reason matters. Quiet
+                              by default: it must never be the easiest thing to hit
+                              next to Approve. */}
+                          {o.status !== "Delivered" && o.status !== "Cancelled" && (
+                            <button className="btn sm danger ord-cancel"
+                              title={`Cancel order #${o.order_no}`}
+                              onClick={() => { setCancelling(o); setReason(""); setOther(""); }}>
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
