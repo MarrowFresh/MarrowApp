@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ConditionsEditor, { blankCondition, conditionsText } from "../components/ConditionsEditor";
+import type { RuleCondition } from "../lib/types";
 import { adminApi } from "../lib/apiClient";
 import { useResource } from "../lib/useResource";
 
@@ -13,6 +15,8 @@ const blank = (): Row => ({
   code: "", type: "percent", value: 10, min_order: 0, max_discount: null,
   first_order_only: false, usage_limit: null, per_customer_limit: null,
   valid_from: "", valid_to: "", active: true,
+  // No conditions is the old behaviour: qualify on min_order alone.
+  conditions: [], match: "any",
 });
 
 function describe(c: Row) {
@@ -50,6 +54,8 @@ export default function Coupons() {
     per_customer_limit: d.per_customer_limit ? Number(d.per_customer_limit) : null,
     valid_from: d.valid_from || null,
     valid_to: d.valid_to || null,
+    conditions: d.conditions ?? [],
+    match: d.match || "any",
   });
 
   const startEdit = (c: Row) => {
@@ -168,6 +174,48 @@ export default function Coupons() {
               onChange={(e) => set({ first_order_only: e.target.checked })} /> 1st order only
           </label>
 
+        </div>
+
+        {/* Conditions. "Min order ₹" above is one rupee threshold for the whole
+            shop, which cannot be fair when ₹400 is 400g of mutton and over a
+            kilo of chicken. These say it properly: ₹400, OR 1.5kg of chicken,
+            OR 1kg of mutton. Same editor and same engine as the delivery rules,
+            so the two cannot come to mean different things. */}
+        <div className="cond-block">
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+            <label style={{ margin: 0 }}>Who qualifies</label>
+            {(d.conditions?.length ?? 0) === 0 && (
+              <button className="btn sm ghost"
+                onClick={() => set({ conditions: [blankCondition()], match: "any" })}>
+                + Add a condition
+              </button>
+            )}
+          </div>
+
+          {(d.conditions?.length ?? 0) === 0 ? (
+            <div className="pe-hint" style={{ marginTop: 4 }}>
+              Any order{Number(d.min_order) > 0 ? ` over ₹${d.min_order}` : ""} qualifies.
+              Add a condition to ask for a weight or a category instead — “1.5kg of Chicken”
+              is a fairer ask than a rupee figure that means different amounts at each counter.
+            </div>
+          ) : (
+            <>
+              <ConditionsEditor
+                conditions={d.conditions as RuleCondition[]}
+                match={(d.match as "any" | "all") || "any"}
+                onChange={(next) => set({ conditions: next })}
+                onMatchChange={(m) => set({ match: m })}
+              />
+              <div className="pe-hint" style={{ marginTop: 8 }}>
+                Customers who don’t qualify are told:{" "}
+                <b>“{d.code.trim().toUpperCase() || "CODE"} needs{" "}
+                {conditionsText(d.conditions as RuleCondition[], (d.match as "any" | "all") || "any")}.”</b>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="row" style={{ marginTop: 14 }}>
           <button className="btn primary" disabled={saving || !d.code.trim()} onClick={save}>
             {saving ? "Saving…" : editing ? "Save changes" : "Add coupon"}
           </button>
@@ -185,13 +233,19 @@ export default function Coupons() {
           <p className="muted">No coupons yet.</p>
         ) : (
           <table>
-            <thead><tr><th>Code</th><th>Offer</th><th>Min order</th><th>Limits</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Code</th><th>Offer</th><th>Who qualifies</th><th>Limits</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {coupons.map((c) => (
                 <tr key={c.id}>
                   <td><b>{c.code}</b></td>
                   <td className="muted">{describe(c)}</td>
-                  <td>{c.min_order ? inr(c.min_order) : "—"}</td>
+                  {/* The whole qualifying condition in one cell: a coupon whose
+                      rules are invisible in the list is a coupon nobody can audit. */}
+                  <td style={{ fontSize: 12.5 }}>
+                    {(c.conditions?.length ?? 0) > 0
+                      ? conditionsText(c.conditions, c.match || "any")
+                      : c.min_order ? inr(c.min_order) : "—"}
+                  </td>
                   <td className="muted" style={{ fontSize: 12 }}>{limits(c)}</td>
                   <td>
                     <button className={"btn sm " + (c.active ? "accent" : "ghost")}

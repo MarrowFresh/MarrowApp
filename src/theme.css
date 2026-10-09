@@ -641,3 +641,9 @@ textarea {
 .ord-none { color: var(--muted); padding: 0 2px; }
 .btn.sm.ord-cancel { padding: 5px 11px; border-color: var(--line); color: var(--muted); }
 .btn.sm.ord-cancel:hover { background: var(--bad); border-color: var(--bad); color: #fff; }
+
+/* Conditions editor — shared by delivery rules and coupons. */
+.cond-block { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.cond-edit { margin-top: 8px; }
+.cond-row { margin-bottom: 8px; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cond-row select, .cond-row input { min-height: 34px; }
