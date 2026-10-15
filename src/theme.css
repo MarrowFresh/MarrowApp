@@ -647,3 +647,8 @@ textarea {
 .cond-edit { margin-top: 8px; }
 .cond-row { margin-bottom: 8px; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cond-row select, .cond-row input { min-height: 34px; }
+
+/* An order taken while the shop was shut. Quiet, but never invisible: the one
+   that has been waiting since 11pm should not get cut last. */
+.pre-for { font-family: var(--mono, monospace); font-size: 10.5px; color: var(--warn, #9A6314);
+  margin-top: 2px; white-space: nowrap; }

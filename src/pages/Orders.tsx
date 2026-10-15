@@ -430,7 +430,18 @@ export default function Orders() {
                   const placed = placedOn(o.created_at);
                   return (
                     <tr key={o.id}>
-                      <td><Link to={`/orders/${o.id}`}>#{o.order_no}</Link></td>
+                      <td>
+                        <Link to={`/orders/${o.id}`}>#{o.order_no}</Link>
+                        {/* Taken while the shop was shut. Without this the night's
+                            orders look identical to the morning's, and the one that
+                            has been waiting since 11pm gets cut last. */}
+                        {o.scheduled_for && (
+                          <div className="pre-for" title={`Ordered while closed — prepare at ${new Date(o.scheduled_for).toLocaleString("en-IN")}`}>
+                            ⏳ for {new Date(o.scheduled_for).toLocaleString("en-IN",
+                              { hour: "numeric", minute: "2-digit", hour12: true })}
+                          </div>
+                        )}
+                      </td>
                       <td className="nowrap" title={placed?.full}>
                         {placed ? (
                           <>

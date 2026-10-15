@@ -109,6 +109,10 @@ export interface Customer {
 }
 
 export interface Order {
+  /// Set when the order arrived outside opening hours: the time it is to be
+  /// prepared, not the time it was placed. Null for an ordinary order.
+  scheduled_for?: string | null;
+  cancel_reason?: string | null;
   id: string;
   order_no: number;
   customer_name: string;
