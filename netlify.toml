@@ -1,0 +1,38 @@
+# Netlify builds and deploys this app straight from GitHub on every push to the
+# production branch (main). The API runs separately on the Hostinger VPS.
+
+[build]
+  # Fail the build if a dev "localhost:<port>" URL leaked into the bundle (e.g.
+  # from a stray .env), rather than shipping an admin that calls localhost.
+  command = """
+    npm run build && \
+    if grep -rq 'localhost:[0-9]' dist; then \
+      echo 'ERROR: bundle contains a localhost URL'; grep -rn 'localhost:[0-9]' dist | head; exit 1; \
+    fi
+  """
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  # Where the app calls the API. Public, not a secret: it is baked into the
+  # JavaScript at build time, so changing it needs a new deploy.
+  VITE_API_BASE = "https://api.marrowfresh.com"
+
+# Vite puts a content hash in every file name under /assets, so these never
+# change: cache them for a year.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# The app uses HashRouter, so this fallback is only a safety net for deep links.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
